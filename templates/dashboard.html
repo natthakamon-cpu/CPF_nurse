@@ -535,13 +535,13 @@
       document.getElementById("sumTotal").innerText = fmtBaht(m.total);
     }
 
-    function renderCostChart() {
-      const drugData = (costCache || []).map(x => x.drug || 0);
-      const supplyData = (costCache || []).map(x => x.supply || 0);
+    function renderCostChart(){
+      const drugData   = (costCache||[]).map(x => x.drug || 0);
+      const supplyData = (costCache||[]).map(x => x.supply || 0);
 
       const ctx = document.getElementById("monthlyCostChart");
 
-      if (monthlyCostChart) {
+      if(monthlyCostChart){
         monthlyCostChart.destroy();
       }
 
@@ -550,8 +550,18 @@
         data: {
           labels: monthLabels,
           datasets: [
-            { label: "ค่ายา", data: drugData },
-            { label: "ค่าเวชภัณฑ์", data: supplyData }
+            {
+              label: "ค่ายา",
+              data: drugData,
+              backgroundColor: "#90CAF9"
+            },
+            {
+              label: "ค่าเวชภัณฑ์",
+              data: supplyData,
+              backgroundColor: "#9C27B0"   // ✅ สีม่วง
+              // borderColor: "#7B1FA2"     // (ถ้าอยากให้ขอบม่วงเข้ม)
+              // borderWidth: 1
+            }
           ]
         },
         options: {
@@ -560,6 +570,7 @@
         }
       });
     }
+
 
     /* ✅ เรียกเมื่อเข้าแท็บ cost หรือเปลี่ยนปี */
     async function ensureCostReady() {
