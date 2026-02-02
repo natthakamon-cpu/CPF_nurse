@@ -217,7 +217,7 @@
 
       <form method="post" action="/other/add_item" id="addItemForm">
         <label>ชื่อรายการ (อุปกรณ์/รายการพิเศษ)</label>
-        <input type="text" name="name" required>
+        <input type="text" id="itemName" name="item_name" required>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-cancel" onclick="closeAddItem()">ยกเลิก</button>
@@ -229,24 +229,25 @@
 
   <div class="footer">© 2025 Safety Officer, CPF Khon Kaen Feedmill</div>
 
-  <script>
+    <script>
     const modalBg = document.getElementById("modalBg");
     const itemName = document.getElementById("itemName");
 
     function openAddItem(){
-      modalBg.style.display = "flex";
-      setTimeout(() => itemName.focus(), 50);
+        modalBg.style.display = "flex";
+        setTimeout(() => itemName.focus(), 50);
     }
     function closeAddItem(){
-      modalBg.style.display = "none";
-      itemName.value = "";
+        modalBg.style.display = "none";
+        itemName.value = "";
     }
     function closeIfBg(e){
-      if(e.target === modalBg) closeAddItem();
+        if(e.target === modalBg) closeAddItem();
     }
     document.addEventListener("keydown", (e) => {
-      if(e.key === "Escape") closeAddItem();
+        if(e.key === "Escape") closeAddItem();
     });
-  </script>
+    </script>
+
 </body>
 </html>
