@@ -84,18 +84,33 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     }
 
-    .save-btn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: #28a745;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 18px;
-      font-weight: 600;
-    }
+      /* ✅ เพิ่ม/แก้ให้ top-bar คุมตำแหน่งปุ่ม */
+      .top-bar{
+        display:flex;
+        align-items:center;
+        justify-content:flex-start;
+        margin-bottom: 20px;
+      }
+
+      /* ✅ แก้ปุ่มกลับ: ไม่ใช้ absolute แล้ว */
+      .save-btn{
+        position: static;              /* สำคัญ: เลิก absolute */
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+
+        background: #28a745;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .save-btn:hover{
+        opacity: .92;
+      }
 
     h2 {
       margin-top: 10px;
@@ -291,27 +306,40 @@
     <div id="page-list" class="box page active">
       <!-- ปุ่มกลับเมนู -->
       <div class="top-bar">
-        <a href="/menu" class="save-btn">⬅ ย้อนกลับ</a>
+        <a href="/treatment_menu" class="save-btn">
+          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
+        </a>
       </div>
+
+
       <h2>ทะเบียนการรักษา</h2>
       <input type="text" id="searchInput" class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable()">
       <table id="recordTable"></table>
     </div>
 
     <!-- ================= VIEW ================= -->
-
     <div id="page-view" class="box page">
-      <a href="/treatment_menu" class="save-btn">⬅ เมนูหลัก</a>
+      <div class="top-bar">
+        <a href="/treatment_menu" class="save-btn">
+          <i class="fa-solid fa-arrow-left"></i> เมนูหลัก
+        </a>
+      </div>
+
       <h2>ดูข้อมูลการรักษา</h2>
       <div id="viewBox"></div>
       <button class="back-btn" onclick="back()">⬅ กลับหน้าทะเบียน</button>
     </div>
 
     <!-- ================= EDIT ================= -->
-
     <div id="page-edit" class="box page">
-      <a href="/treatment_menu" class="save-btn">⬅ เมนูหลัก</a>
+      <div class="top-bar">
+        <a href="/treatment_menu" class="save-btn">
+          <i class="fa-solid fa-arrow-left"></i> เมนูหลัก
+        </a>
+      </div>
+
       <h2>แก้ไขข้อมูลการรักษา</h2>
+
 
       <form id="editForm">
 
@@ -434,6 +462,31 @@
     </div>
 
     <script>
+
+    const symptomLabelMap = {
+      respiratory: "ระบบทางเดินหายใจ",
+      digestive: "ระบบย่อยอาหาร",
+      muscle: "กล้ามเนื้อ",
+      brain: "ระบบสมอง",
+      skin: "ผิวหนัง",
+      medicine: "อายุรกรรม",
+      urinary: "ระบบขับถ่าย",
+      reproductive: "ระบบสืบพันธุ์",
+      eye: "ตา หู ช่องปาก",
+      throat: "คอ",
+      nose: "จมูก",
+      wound: "ทำแผล",
+      work_accident: "อุบัติเหตุในงาน",
+      nonwork_accident: "อุบัติเหตุนอกงาน",
+      supply: "เวชภัณฑ์",
+      other: "อื่นๆ"
+    };
+
+    function symptomLabel(code){
+      if (!code) return "-";
+      return symptomLabelMap[code] || code; // เผื่อมีค่าใหม่
+    }
+
       /* ===============================
          TABLE RENDER (SQLite)
       ================================ */
@@ -463,40 +516,41 @@
         const table = document.getElementById('recordTable');
 
         table.innerHTML = `
-    <tr>
-      <th>ลำดับ</th>
-      <th>วันที่</th>
-      <th>ชื่อ - นามสกุล</th>
-      <th>ยาที่ได้รับ / เวชภัณฑ์</th>
-      <th>จัดการ</th>
-    </tr>
-  `;
+          <tr>
+            <th>ลำดับ</th>
+            <th>วันที่</th>
+            <th>ชื่อ - นามสกุล</th>
+            <th>กลุ่มอาการ</th>
+            <th>จัดการ</th>
+          </tr>
+        `;
 
         if (!records || records.length === 0) {
           table.innerHTML += `
-      <tr>
-        <td colspan="5" style="color:#999;">ไม่มีข้อมูล</td>
-      </tr>
-    `;
+            <tr>
+              <td colspan="5" style="color:#999;">ไม่มีข้อมูล</td>
+            </tr>
+          `;
           return;
         }
 
         records.forEach((r, i) => {
           table.innerHTML += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${safeText(r.visit_date)}</td>
-        <td>${safeText(r.patient_name)}</td>
-        <td style="text-align:left">${formatMeds(r.medicine)}</td>
-        <td>
-          <span class="action-btn" onclick="viewRecord(${r.id})">👁️</span>
-          <span class="action-btn" onclick="editRecord(${r.id})">✏️</span>
-          <span class="action-btn" onclick="deleteRecord(${r.id})">🗑️</span>
-        </td>
-      </tr>
-    `;
+            <tr>
+              <td>${i + 1}</td>
+              <td>${safeText(r.visit_date)}</td>
+              <td>${safeText(r.patient_name)}</td>
+              <td>${symptomLabel(r.symptom_group)}</td>
+              <td>
+                <span class="action-btn" onclick="viewRecord(${r.id})">👁️</span>
+                <span class="action-btn" onclick="editRecord(${r.id})">✏️</span>
+                <span class="action-btn" onclick="deleteRecord(${r.id})">🗑️</span>
+              </td>
+            </tr>
+          `;
         });
       }
+
 
       /* ===============================
          LOAD LIST (SQLite)
@@ -540,7 +594,7 @@
         <p><b>วันที่เข้ารับการรักษา:</b> ${safeText(d.visit_date)}</p>
         <p><b>ชื่อ - นามสกุล ผู้ป่วย:</b> ${safeText(d.patient_name)}</p>
         <p><b>แผนก:</b> ${safeText(d.department)}</p>
-        <p><b>กลุ่มอาการ:</b> ${safeText(d.symptom_group)}</p>
+        <p><b>กลุ่มอาการ:</b> ${symptomLabel(d.symptom_group)}</p>
         <p><b>รายละเอียดอาการ:</b> ${safeText(d.symptom_detail)}</p>
         <p><b>ยาที่ได้รับ / เวชภัณฑ์:</b> ${formatMeds(d.medicine)}</p>
         <p><b>ประวัติแพ้ยา:</b> ${d.allergy == 1 ? "มี" : "ไม่มี"}</p>
