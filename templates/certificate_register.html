@@ -77,17 +77,30 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, .25);
     }
 
-    .save-btn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: #28a745;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 18px;
+    /* แถบบนสำหรับปุ่มย้อนกลับ (ให้เหมือนกันทุกหน้า) */
+    .top-bar{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      margin-bottom:20px;
     }
+
+    /* ปุ่มย้อนกลับ/กลับเมนู */
+    .back-menu-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:#28a745;
+      color:#fff;
+      padding:10px 18px;
+      border-radius:8px;
+      text-decoration:none;
+      font-size:18px;
+      font-weight:600;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    .back-menu-btn:hover{ background:#218838; }
+
 
     h2 {
       text-align: center;
@@ -168,7 +181,12 @@
 
     <!-- ================= LIST ================= -->
     <div id="page-list" class="box page active">
-      <a href="/medical_certificate" class="save-btn">⬅ เมนูหลัก</a>
+      <div class="top-bar">
+        <a href="/medical_certificate" class="back-menu-btn">
+          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
+        </a>
+      </div>
+
       <h2>ทะเบียนใบรับรองแพทย์</h2>
 
       <input class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable(this.value)">
@@ -178,10 +196,16 @@
 
     <!-- ================= VIEW ================= -->
     <div id="page-view" class="box page">
-      <a href="#" class="save-btn" onclick="back()">⬅ กลับ</a>
+      <div class="top-bar">
+        <a href="javascript:void(0)" class="back-menu-btn" onclick="back()">
+          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
+        </a>
+      </div>
+
       <h2>ดูข้อมูลใบรับรองแพทย์</h2>
       <div id="viewBox"></div>
     </div>
+
 
     <script>
       /* ================= CONFIG ================= */
