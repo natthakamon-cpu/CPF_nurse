@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <title>Login</title>
 
-<link rel="stylesheet"
- href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Sarabun -->
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <style>
-*{
-  box-sizing:border-box;
-}
+*{ box-sizing:border-box; }
 
 body{
   font-family:'Sarabun',sans-serif;
@@ -27,65 +26,153 @@ body{
   display:flex;
   justify-content:center;
   align-items:center;
+  padding:30px 16px;
 }
 
 /* ===== LOGIN BOX ===== */
 .login-box{
   background:#ffffff;
-  padding:60px 50px;
-  width:480px;
-  border-radius:16px;
+  padding:55px 48px;
+  width:520px;
+  max-width:100%;
+  border-radius:18px;
   text-align:center;
-  box-shadow:0 8px 20px rgba(0,0,0,0.18);
+  box-shadow:0 10px 25px rgba(0,0,0,0.18);
+  position:relative;
 }
 
 .login-box img{
-  width:90px;
-  margin-bottom:20px;
+  width:92px;
+  margin-bottom:18px;
 }
 
 .login-box h2{
-  font-size:26px;
-  margin-bottom:30px;
+  font-size:22px;
+  margin:0 0 28px;
   color:#333;
+  font-weight:700;
+  line-height:1.35;
 }
 
-.login-box input{
+/* ===== INPUT WITH ICON (ฟ้าเหมือนตัวอย่าง) ===== */
+.input-group{
+  display:flex;
+  align-items:center;
   width:100%;
-  padding:14px;
-  font-size:18px;
-  margin-bottom:18px;
-  border:1px solid #ccc;
-  border-radius:8px;
+  border:1px solid #b7dcff;
+  background:#eaf4ff;
+  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:16px;
+  transition:0.2s;
 }
 
+.input-group:focus-within{
+  border-color:#2c7be5;
+  box-shadow:0 0 0 4px rgba(44,123,229,0.15);
+}
+
+.input-icon{
+  width:40px;
+  height:40px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#d6ecff;
+  color:#2c7be5;
+  margin-right:10px;
+  flex-shrink:0;
+  font-size:18px;
+}
+
+.input-group input{
+  border:none;
+  outline:none;
+  background:transparent;
+  width:100%;
+  font-size:18px;
+  font-family:'Sarabun',sans-serif;
+}
+
+/* placeholder */
+.input-group input::placeholder{
+  color:#6b7a8a;
+}
+
+/* ===== ERROR ===== */
+.error{
+  color:#d11a2a;
+  margin:6px 0 12px;
+  font-size:14px;
+  font-weight:600;
+}
+
+/* ===== BUTTON (สีฟ้า) ===== */
 .login-box button{
   width:100%;
   padding:14px;
   font-size:18px;
-  font-weight:bold;
+  font-weight:700;
   background:#2c7be5;
   color:#fff;
   border:none;
-  border-radius:8px;
+  border-radius:10px;
   cursor:pointer;
+  transition:0.2s;
 }
 
 .login-box button:hover{
   background:#1a5fc4;
 }
 
-.error{
-  color:red;
-  margin-bottom:12px;
-  font-size:14px;
+/* ===== LOADING OVERLAY ===== */
+.loading-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
 }
 
-/* ===== FOOTER (เหมือนหน้าเมนู / ขยะติดเชื้อ) ===== */
-.footer{
-  background:#e0e0e0;
+.loading-box{
+  width:min(640px, 92vw);
+  background:#ffffff;
+  border-radius:16px;
+  padding:36px 22px;
   text-align:center;
-  padding:12px;
+  box-shadow:0 12px 35px rgba(0,0,0,0.25);
+}
+
+.loading-text{
+  font-size:34px;
+  font-weight:700;
+  color:#333;
+  margin-bottom:18px;
+}
+
+.spinner{
+  width:46px;
+  height:46px;
+  border:6px solid #d7e7ff;
+  border-top-color:#2c7be5;
+  border-radius:50%;
+  display:inline-block;
+  animation:spin 0.9s linear infinite;
+}
+
+@keyframes spin{
+  to{ transform:rotate(360deg); }
+}
+
+/* ===== FOOTER ===== */
+.footer{
+  width:100%;
+  background:#dcdcdc;
+  text-align:center;
+  padding:14px;
   font-size:13px;
   color:#555;
 }
@@ -94,24 +181,38 @@ body{
 
 <body>
 
+<!-- ===== LOADING OVERLAY ===== -->
+<div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+  <div class="loading-box">
+    <div class="loading-text">กำลังเข้าสู่ระบบ...</div>
+    <span class="spinner" aria-label="loading"></span>
+  </div>
+</div>
+
 <!-- ===== LOGIN ===== -->
 <div class="login-wrapper">
   <div class="login-box">
 
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/CPF_Logo.svg/1078px-CPF_Logo.svg.png"
-         alt="CPF Logo">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/CPF_Logo.svg/1078px-CPF_Logo.svg.png" alt="CPF Logo">
 
-    <h2>ห้องพยาบาล CPF ขอนแก่น</h2>
+    <h2>Nurse care ระบบการบริหารงานห้องพยาบาล CPF ขอนแก่น</h2>
 
-    <form method="post">
-      <input name="username" placeholder="Username" required>
-      <input name="password" type="password" placeholder="Password" required>
+    <form method="post" id="loginForm">
+      <div class="input-group">
+        <div class="input-icon"><i class="fa-solid fa-user"></i></div>
+        <input name="username" placeholder="Username" required>
+      </div>
+
+      <div class="input-group">
+        <div class="input-icon"><i class="fa-solid fa-lock"></i></div>
+        <input name="password" type="password" placeholder="Password" required>
+      </div>
 
       {% if error %}
         <div class="error">{{ error }}</div>
       {% endif %}
 
-      <button type="submit">เข้าสู่ระบบ</button>
+      <button type="submit" id="loginBtn">เข้าสู่ระบบ</button>
     </form>
 
   </div>
@@ -121,6 +222,19 @@ body{
 <div class="footer">
   © 2025 Safety Officer, CPF Khon Kaen Feedmill
 </div>
+
+<script>
+  // แสดง "กำลังเข้าสู่ระบบ..." ตอนกดเข้าสู่ระบบ
+  // (ไม่แสดงถ้ามี error ถูก render กลับมาจาก server)
+  document.getElementById("loginForm").addEventListener("submit", function () {
+    const hasError = {{ 'true' if error else 'false' }};
+    if (!hasError) {
+      document.getElementById("loadingOverlay").style.display = "flex";
+      document.getElementById("loadingOverlay").setAttribute("aria-hidden", "false");
+      document.getElementById("loginBtn").disabled = true;
+    }
+  });
+</script>
 
 </body>
 </html>
