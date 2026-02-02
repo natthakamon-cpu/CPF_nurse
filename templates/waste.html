@@ -109,23 +109,49 @@
       /* ✅ หัวข้อ 32 */
     }
 
-    .btn {
-      width: 100%;
-      padding: 16px;
-      font-size: 24px;
-      margin-top: 16px;
-      cursor: pointer;
-      border: none;
-      border-radius: 10px;
+    /* ===== กล่องปุ่ม (ให้เหมือนหน้าทะเบียนการรักษา) ===== */
+    .box{
+      width:60%;
+      margin:auto;
+    }
+
+    /* ===== ปุ่มเมนูย่อย (ขนาดเท่าหน้าทะเบียนการรักษา) ===== */
+    .menu-btn{
+      display:block;
+      width:100%;
+
+      padding:22px;      /* เทียบกับหน้า treatment (ประมาณนี้) */
+      margin:20px 0;     /* เว้นระยะเท่ากัน */
+
+      font-size:24px;
+      font-weight:600;
+
+      border:none;
+      border-radius:14px;
+      text-decoration:none;
+      color:#fff;
+
+      box-shadow:0 6px 18px rgba(0,0,0,0.25);
+      transition:0.3s;
+      text-align:center;
+    }
+
+    .menu-btn:hover{
+      transform:translateY(-4px);
+      box-shadow:0 10px 25px rgba(0,0,0,0.3);
     }
 
     .add {
-      background: #e74c3c;
+      background: linear-gradient(135deg,
+          #1E88E5 0%,
+          #90CAF9 100%);
       color: white;
     }
 
     .list {
-      background: #2ecc71;
+            background: linear-gradient(135deg,
+          #1E88E5 0%,
+          #90CAF9 100%);
       color: white;
     }
 
@@ -149,7 +175,6 @@
 <body>
 
   <!-- ===== HEADER ===== -->
-  <!-- ===== HEADER ===== -->
   <div class="header">
     <div class="header-left">
       <i class="fa-solid fa-stethoscope"></i>
@@ -172,13 +197,10 @@
 
     <h2>ขยะติดเชื้อ</h2>
 
-    <a href="/waste/add">
-      <button class="btn add">➕ เพิ่มข้อมูล</button>
-    </a>
-
-    <a href="/waste/register">
-      <button class="btn list">📑 ทะเบียน</button>
-    </a>
+    <div class="box">
+      <a href="/waste/add" class="menu-btn add">➕ เพิ่มข้อมูล</a>
+      <a href="/waste/register" class="menu-btn list">📑 ทะเบียนขยะติดเชื้อ</a>
+    </div>
 
   </div>
 
