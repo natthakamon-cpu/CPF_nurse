@@ -118,27 +118,25 @@
     }
 
     /* ===== ปุ่มเมนู (ฟ้าไล่เฉด) ===== */
-    .menu-btn {
-      display: block;
+    .menu-btn{
+      display:block;
+      width:100%;            /* ให้เต็มความกว้างของ .box (60%) */
+      background:linear-gradient(135deg,#1E88E5 0%,#90CAF9 100%);
+      color:#fff;
 
-      background: linear-gradient(135deg,
-          #1E88E5 0%,
-          #90CAF9 100%);
+      padding:22px;          /* ให้เท่ากับหน้า medicine_type */
+      margin:20px 0;         /* ให้เท่ากับหน้า medicine_type */
 
-      color: #fff;
-      padding: 24px;
-      margin: 24px 0;
+      font-family:'Sarabun', sans-serif;
+      font-size:24px;
+      font-weight:600;
 
-      font-family: 'Sarabun', sans-serif;
-      font-size: 24px;
-      /* ตัวอักษรปกติ */
-      font-weight: 600;
-
-      border-radius: 14px;
-      text-decoration: none;
-      transition: 0.3s;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      border-radius:14px;
+      text-decoration:none;
+      transition:0.3s;
+      box-shadow:0 6px 18px rgba(0,0,0,0.25);
     }
+
 
     .menu-btn:hover {
       transform: translateY(-4px);
@@ -189,13 +187,15 @@
 
       <h2>ทะเบียนการรักษา</h2>
 
-      <a href="/treatment/form" class="menu-btn">
-        📝 บันทึกทะเบียนการรักษา
-      </a>
+      <div class="box">
+        <a href="/treatment/form" class="menu-btn">
+          📝 บันทึกทะเบียนการรักษา
+        </a>
 
-      <a href="/treatment/register" class="menu-btn">
-        📋 ทะเบียนการรักษา
-      </a>
+        <a href="/treatment/register" class="menu-btn">
+          📋 ทะเบียนการรักษา
+        </a>
+      </div>
 
     </div>
 
