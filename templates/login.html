@@ -54,6 +54,27 @@ body{
   line-height:1.35;
 }
 
+.login-title{
+  margin-bottom:30px;
+  color:#333;
+  line-height:1.25;
+}
+
+.login-title .title-main{
+  display:block;
+  font-size:32px;     /* เด่นกว่า */
+  font-weight:800;    /* หนากว่า */
+  color:#1E88E5;      /* ฟ้าให้เด่น */
+  margin-bottom:6px;
+}
+
+.login-title .title-sub{
+  display:block;
+  font-size:18px;     /* เล็กกว่าบรรทัดบน */
+  font-weight:600;
+  color:#444;
+}
+
 /* ===== INPUT WITH ICON (ฟ้าเหมือนตัวอย่าง) ===== */
 .input-group{
   display:flex;
@@ -195,9 +216,9 @@ body{
 
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/CPF_Logo.svg/1078px-CPF_Logo.svg.png" alt="CPF Logo">
 
-    <h2>
-      Nurse care<br>
-      ระบบการบริหารงานห้องพยาบาล CPF ขอนแก่น
+    <h2 class="login-title">
+      <span class="title-main">Nurse Care</span>
+      <span class="title-sub">ระบบการบริหารงานห้องพยาบาล CPF ขอนแก่น</span>
     </h2>
 
     <form method="post" id="loginForm">
