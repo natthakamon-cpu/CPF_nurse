@@ -67,27 +67,49 @@
         /* ================= MAIN ================= */
         .container{
             max-width:1500px;
+
+            /* ✅ กลับมาเป็นพื้นขาวทั้งกรอบ */
             background:#ffffff;
+
             margin:40px auto;
             padding:40px;
             border-radius:14px;
             box-shadow:0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        h2{
-            text-align:center;
-            margin-bottom:40px;
+
+        .page-title{
+        margin: 0 0 40px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
         }
 
         .menu-title{
-            display:inline-block;
-            background:#A29BFE;
-            color:#fff;
-            padding:14px 40px;
-            border-radius:14px;
-            font-size:26px;
-            font-weight:700;
-            box-shadow:0 4px 12px rgba(0,0,0,0.25);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+
+        /* ✅ ลบกรอบ/กล่อง */
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;           /* ถ้าอยากให้มีระยะห่างเฉยๆใช้ padding: 8px 0; ได้ */
+        }
+
+        .cpf-logo{
+        height: 80px;
+        width: auto;
+        display: block;
+        object-fit: contain;
+        }
+
+        .title-text{
+        font-size: 32px;   /* ปรับขนาดตัวอักษร */
+        color: #0b3d91;    /* ปรับสีข้อความ */
+        font-weight: 800;  /* (ถ้าต้องการให้หนา) */
         }
 
         .menu-container{
@@ -100,9 +122,15 @@
 
         .menu-item{
             height:230px;
-            background:linear-gradient(135deg,#409ef0 0%,#90CAF9 100%);
+
+            /* ✅ ฟ้าไล่สี */
+            background: linear-gradient(135deg, #1e88e5 0%, #90caf9 100%);
+
             border-radius:16px;
-            color:#fff;
+
+            /* ✅ ตัวหนังสือสีขาว */
+            color:#ffffff;
+
             text-decoration:none;
 
             display:flex;
@@ -111,19 +139,25 @@
             justify-content:center;
 
             font-size:22px;
-            font-weight:600;
-            box-shadow:0 6px 18px rgba(0,0,0,0.2);
-            transition:0.3s;
+            font-weight:700;
+
+            box-shadow:0 6px 18px rgba(0,0,0,0.20);
+            transition:0.25s;
+
+            /* ✅ เอาเส้นขอบออก (เพราะปุ่มเป็นสีอยู่แล้ว) */
+            border:none;
         }
 
         .menu-item i{
             font-size:64px;
             margin-bottom:16px;
+            color:#ffffff; /* ✅ ไอคอนสีขาว */
         }
 
         .menu-item:hover{
             transform:translateY(-6px);
-            box-shadow:0 10px 25px rgba(0,0,0,0.25);
+            box-shadow:0 12px 28px rgba(0,0,0,0.25);
+            filter: brightness(1.03);
         }
 
         /* ================= FOOTER ================= */
@@ -157,9 +191,15 @@
 <!-- ===== MAIN ===== -->
 <div class="container">
 
-    <h2>
-        <span class="menu-title">ห้องพยาบาล CPF ขอนแก่น</span>
-    </h2>
+        <h2 class="page-title">
+        <span class="menu-title">
+            <img class="cpf-logo"
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/CPF_Logo.svg/960px-CPF_Logo.svg.png"
+                alt="CPF Logo">
+            <span class="title-text">ห้องพยาบาล CPF ขอนแก่น</span>
+        </span>
+        </h2>
+
 
     <div class="menu-container">
 
