@@ -1609,6 +1609,21 @@ def medical_certificate_register():
 def medical_certificate_edit_with_id(id):
     return render_template("certificate_edit.html", record_id=id)
 
+@app.route("/medical_certificate/print")
+@login_required
+def medical_certificate_print_temp():
+    """Print medical certificate from temporary data (localStorage)"""
+    return render_template("certificate_print.html", record=None)
+
+@app.route("/medical_certificate/print/<int:id>")
+@login_required
+def medical_certificate_print(id):
+    """Print medical certificate from database"""
+    res = gas_get("medical_certificate", id)
+    if not res.get("ok") or not res.get("data"):
+        return "ไม่พบข้อมูล", 404
+    return render_template("certificate_print.html", record=res["data"])
+
 # ============================================
 # MEDICAL CERTIFICATE API
 # ============================================
