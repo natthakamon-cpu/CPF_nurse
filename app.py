@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 import requests
 import json
+import time
 from datetime import datetime
 from functools import wraps
 from urllib.parse import unquote, quote
@@ -16,8 +17,20 @@ GAS_URL = "https://script.google.com/macros/s/AKfycbx8CTkhx73DptbxSyOWe9rOzfNrfv
 # GOOGLE SHEETS API HELPERS
 # ============================================
 
-def gas_list(table, limit=1000):
-    """ดึงข้อมูลทั้งหมดจาก Sheet"""
+_GAS_CACHE = {}
+
+def gas_cache_invalidate(table=None):
+    """ล้าง cache เพื่อให้ข้อมูลใหม่แสดงทันทีหลังมีการเขียนข้อมูล"""
+    if table is None:
+        _GAS_CACHE.clear()
+        return
+    # ลบเฉพาะ key ของ table นั้น ๆ
+    for k in list(_GAS_CACHE.keys()):
+        if k[0] == table:
+            _GAS_CACHE.pop(k, None)
+
+def gas_list_raw(table, limit=1000):
+    """(RAW) ดึงข้อมูลทั้งหมดจาก Sheet แบบไม่ cache"""
     try:
         r = requests.get(GAS_URL, params={
             "action": "list",
@@ -29,6 +42,28 @@ def gas_list(table, limit=1000):
     except Exception as e:
         print(f"gas_list error: {e}")
         return {"ok": False, "data": [], "message": str(e)}
+
+def gas_list_cached(table, limit=5000, ttl=20):
+    """ดึงข้อมูลแบบมี cache TTL สั้น ๆ กันการดึงชีตซ้ำ"""
+    key = (table, limit)
+    now = time.time()
+
+    if key in _GAS_CACHE:
+        ts, res = _GAS_CACHE[key]
+        if now - ts < ttl:
+            return res
+
+    res = gas_list_raw(table, limit)
+
+    # cache เฉพาะผลลัพธ์ที่ ok
+    if isinstance(res, dict) and res.get("ok"):
+        _GAS_CACHE[key] = (now, res)
+
+    return res
+
+def gas_list(table, limit=1000):
+    """(DEFAULT) ให้ทุกจุดในระบบที่เรียก gas_list ได้ cache อัตโนมัติ"""
+    return gas_list_cached(table, limit=limit, ttl=20)
 
 def norm_text(s):
     return " ".join(str(s or "").strip().split())
@@ -71,7 +106,13 @@ def gas_append(table, payload):
             "payload": payload
         }, timeout=30)
         r.raise_for_status()
-        return r.json()
+        res = r.json()
+
+        # ✅ เขียนสำเร็จ -> ล้าง cache ของ table นี้
+        if isinstance(res, dict) and res.get("ok"):
+            gas_cache_invalidate(table)
+
+        return res
     except Exception as e:
         print(f"gas_append error: {e}")
         return {"ok": False, "message": str(e)}
@@ -86,7 +127,13 @@ def gas_update(table, row_id, payload):
             "payload": payload
         }, timeout=30)
         r.raise_for_status()
-        return r.json()
+        res = r.json()
+
+        # ✅ อัปเดตสำเร็จ -> ล้าง cache ของ table นี้
+        if isinstance(res, dict) and res.get("ok"):
+            gas_cache_invalidate(table)
+
+        return res
     except Exception as e:
         print(f"gas_update error: {e}")
         return {"ok": False, "message": str(e)}
@@ -102,7 +149,13 @@ def gas_update_field(table, row_id, field, value):
             "value": value
         }, timeout=30)
         r.raise_for_status()
-        return r.json()
+        res = r.json()
+
+        # ✅ อัปเดตสำเร็จ -> ล้าง cache ของ table นี้
+        if isinstance(res, dict) and res.get("ok"):
+            gas_cache_invalidate(table)
+
+        return res
     except Exception as e:
         print(f"gas_update_field error: {e}")
         return {"ok": False, "message": str(e)}
@@ -116,10 +169,17 @@ def gas_delete(table, row_id):
             "id": str(row_id)
         }, timeout=30)
         r.raise_for_status()
-        return r.json()
+        res = r.json()
+
+        # ✅ ลบสำเร็จ -> ล้าง cache ของ table นี้
+        if isinstance(res, dict) and res.get("ok"):
+            gas_cache_invalidate(table)
+
+        return res
     except Exception as e:
         print(f"gas_delete error: {e}")
         return {"ok": False, "message": str(e)}
+
 
 # ============================================
 # AUTH DECORATORS
@@ -762,7 +822,7 @@ def treatment_form():
                 item_type = str(it.get("type") or it.get("item_type") or "").strip().lower()
 
                 # ✅ fallback เผื่อ JS ยังไม่ได้ส่ง type มา แต่เลือกกลุ่มอาการเป็น "อื่นๆ"
-                if not item_type and form_group == "อื่นๆ":
+                if not item_type and form_group in ("other", "อื่นๆ"):
                     item_type = "other"
 
                 # ✅ เลือกตาราง lot ให้ถูก
@@ -1001,15 +1061,25 @@ def api_medicine_id():
 
 @app.route("/api/medicine_lots")
 def api_medicine_lots():
-    medicine_id = request.args.get("medicine_id", "")
-    # res = gas_search("medicine_lot", "medicine_id", medicine_id)
-    # ใช้ gas_list แล้ว filter
+    medicine_id = (request.args.get("medicine_id") or "").strip()
+    name = (request.args.get("name") or "").strip()
+
+    # ถ้าไม่ได้ส่ง medicine_id มา แต่ส่ง name มา → หา id ให้
+    if not medicine_id and name:
+        med_res = gas_list("medicine", 5000)
+        if med_res.get("ok"):
+            for m in med_res.get("data", []):
+                if str(m.get("name", "")).strip() == name:
+                    medicine_id = str(m.get("id"))
+                    break
+
+    if not medicine_id:
+        return jsonify({"lots": []})
+
     all_lots = gas_list("medicine_lot", 5000)
-    
     lots = []
     if all_lots.get("ok"):
         for r in all_lots.get("data", []):
-            # เช็ค medicine_id
             if str(r.get("medicine_id", "")) == str(medicine_id):
                 if int(r.get("qty_remain", 0)) > 0:
                     lots.append({
@@ -1018,8 +1088,8 @@ def api_medicine_lots():
                         "remain": r.get("qty_remain"),
                         "price": r.get("price_per_unit")
                     })
-    
     return jsonify({"lots": lots})
+
 
 @app.route("/api/cut_stock", methods=["POST"])
 def api_cut_stock():
