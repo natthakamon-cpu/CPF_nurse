@@ -5,32 +5,16 @@
   <meta charset="UTF-8">
   <title>รายละเอียดขยะติดเชื้อ</title>
 
-  <!-- Sarabun -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <style>
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      font-size: 24px;
-    }
-
-    <style>* {
-      box-sizing: border-box;
-    }
-
-    .header {
-      font-size: 16px;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: 'Sarabun', sans-serif;
       background: #f4f6f8;
       margin: 0;
-    }
-
-    .container {
       font-size: 24px;
     }
 
@@ -40,10 +24,10 @@
       background: #ffffff;
       border-bottom: 1px solid #e0e0e0;
       padding: 14px 40px;
-
       display: flex;
       align-items: center;
       justify-content: space-between;
+      font-size: 16px;
     }
 
     .header-left {
@@ -54,10 +38,7 @@
       font-weight: 700;
       color: #5b2c83;
     }
-
-    .header-left i {
-      font-size: 26px;
-    }
+    .header-left i { font-size: 26px; }
 
     .header-right {
       display: flex;
@@ -84,37 +65,35 @@
       border-radius: 14px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
       position: relative;
-      text-align: center;
     }
 
-    /* ===== ปุ่มย้อนกลับ ===== */
-    .top-bar {
-      position: absolute;
-      top: 20px;
-      left: 20px;
+    /* ===== ปุ่มย้อนกลับ (ตำแหน่งเหมือนเมนู) ===== */
+    .top-bar{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      margin-bottom:20px;
     }
 
-    .back-btn {
-      background: #28a745;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    .back-menu-btn{
+      display:inline-block;
+      background:#28a745;
+      color:white;
+      padding:10px 20px;
+      font-size:20px;
+      border-radius:8px;
+      text-decoration:none;
+      box-shadow:0 4px 10px rgba(0,0,0,0.2);
+      transition:0.2s;
     }
+    .back-menu-btn:hover{ background:#218838; }
 
-    .back-btn:hover {
-      background: #218838;
-    }
-
-    /* ===== หัวข้อ ===== */
     h2 {
+      text-align: center;
       font-size: 32px;
-      margin-bottom: 30px;
+      margin: 10px 0 30px;
     }
 
-    /* ===== กรอบข้อมูล ===== */
     .detail-box {
       max-width: 900px;
       margin: 0 auto;
@@ -125,9 +104,7 @@
       text-align: left;
     }
 
-    .detail-row {
-      margin-bottom: 14px;
-    }
+    .detail-row { margin-bottom: 14px; }
 
     /* ================= FOOTER ================= */
     .footer {
@@ -160,13 +137,12 @@
   <div class="container">
 
     <div class="top-bar">
-      <a href="/waste/register" class="back-btn">⬅ ย้อนกลับ</a>
+      <a href="/waste/register" class="back-menu-btn">⬅ ย้อนกลับ</a>
     </div>
 
     <h2>รายละเอียดขยะติดเชื้อ</h2>
 
     <div class="detail-box">
-
       <div class="detail-row"><b>ผู้รับกำจัด:</b> {{ w.company }}</div>
 
       <div class="detail-row">
@@ -182,14 +158,13 @@
       <div class="detail-row"><b>วันที่:</b> {{ w.date }}</div>
       <div class="detail-row"><b>เวลา:</b> {{ w.time }}</div>
       <div class="detail-row"><b>สถานที่:</b> {{ w.place }}</div>
-
     </div>
 
-  </div>
-  <!-- ===== FOOTER ===== -->
+  </div> <!-- ✅ ปิด container -->
+
   <div class="footer">
     © 2025 Safety Officer, CPF Khon Kaen Feedmill
   </div>
-</body>
 
+</body>
 </html>
