@@ -1,16 +1,16 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 import requests
 import json
 from datetime import datetime
 from functools import wraps
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 
 # ---------------- APP ----------------
 app = Flask(__name__)
 app.secret_key = "cpf_nurse"
 
 # ⭐ ใส่ URL ของ Google Apps Script ที่ Deploy แล้ว
-GAS_URL = "https://script.google.com/macros/s/AKfycbypoIdI7uNbfOVmFD3xg9xtcfJo8VkZ0ow50TyugneMRRvSQNna5saBc2krrTh6tAAXKA/exec"
+GAS_URL = "https://script.google.com/macros/s/AKfycbx8CTkhx73DptbxSyOWe9rOzfNrfvClTJhB_1-l_jX2gPjrxWROP9wByfmxXzYhu2wS2A/exec"
 
 # ============================================
 # GOOGLE SHEETS API HELPERS
@@ -29,6 +29,9 @@ def gas_list(table, limit=1000):
     except Exception as e:
         print(f"gas_list error: {e}")
         return {"ok": False, "data": [], "message": str(e)}
+
+def norm_text(s):
+    return " ".join(str(s or "").strip().split())
 
 def gas_get(table, row_id):
     """ดึงข้อมูลตาม ID"""
@@ -288,6 +291,40 @@ def supply_list():
 def medicine_group():
     return render_template("medicine_group.html", groups=SYMPTOM_GROUPS)
 
+@app.route("/supply/add", methods=["POST"])
+@admin_required
+def supply_add():
+    name = norm_text(request.form.get("name", ""))
+
+    if not name:
+        return "กรอกชื่อเวชภัณฑ์", 400
+
+    # กันซ้ำ (เฉพาะ type = supply)
+    res = gas_list("medicine", 5000)
+    if res.get("ok"):
+        for m in res.get("data", []):
+            m_type = str(m.get("type", "")).strip().lower()
+            m_name = norm_text(m.get("name", ""))
+            if m_type == "supply" and m_name.lower() == name.lower():
+                return redirect("/supply")
+
+    payload = {
+        "type": "supply",
+        "group_name": "เวชภัณฑ์",   # จะตั้งเป็นค่าว่างก็ได้ แต่แนะนำมีชื่อไว้กันสับสน
+        "name": name,
+        "benefit": "",
+        "min_qty": 0,
+        "qty": 0,
+        "expire_date": "",
+        "used": 0
+    }
+
+    r = gas_append("medicine", payload)
+    if not r.get("ok"):
+        return f"เพิ่มไม่สำเร็จ: {r}", 500
+
+    return redirect("/supply")
+
 # ============================================
 # MEDICINE LIST
 # ============================================
@@ -295,48 +332,258 @@ def medicine_group():
 
 @app.route("/medicine/list/<group>")
 def medicine_list(group):
-    # ถอดรหัส URL (เช่น %E0%B8%... -> ภาษาไทย)
-    group = unquote(group)
-    # เปลี่ยนมาดึงทั้งหมดแล้ว Filter ใน Python แทน (แก้ปัญหา case sensitive / วรรค)
+    group = unquote(group).strip()
+
+    # ✅ CASE: อื่นๆ (แสดง "รายการ" ไม่ใช่ lot)
+    if group == "อื่นๆ":
+        res = gas_list("other_item", 5000)
+        items = res.get("data", []) if res.get("ok") else []
+        # เรียงตามชื่อ
+        items.sort(key=lambda x: str(x.get("name", "")).strip().lower())
+        return render_template("medicine_other.html", group=group, items=items)
+
+    # CASE: กลุ่มปกติ (ของเดิมคุณ)
     res = gas_list("medicine", 5000)
     meds = []
     if res.get("ok"):
         for m in res.get("data", []):
             m_type = str(m.get("type", "")).strip().lower()
             m_group = str(m.get("group_name", "")).strip()
-            
-            # เช็คว่าเป็น medicine และกลุ่มตรงกัน
-            if m_type == "medicine" and m_group == group.strip():
+            if m_type == "medicine" and m_group == group:
                 meds.append(m)
-                
-    return render_template("medicine_list.html", medicines=meds, group=group)
+
+    return render_template("medicine_list.html", medicines=meds, meds=meds, group=group)
+
+
+@app.route("/other/add_item", methods=["POST"])
+@login_required
+def other_add_item():
+    item_name = norm_text(request.form.get("item_name"))
+
+    if not item_name:
+        return "กรอกชื่อรายการ", 400
+
+    # 1) อ่านรายการเดิมก่อน (ถ้าอ่านไม่ได้ ให้ฟ้อง error จะได้รู้ทันที)
+    res = gas_list("other_item", 5000)
+    if not res.get("ok"):
+        return f"อ่านชีต other_item ไม่สำเร็จ: {res}", 500
+
+    rows = res.get("data", [])
+
+    # 2) กันซ้ำ (รองรับกรณีหัวคอลัมน์ไม่ใช่ name)
+    for r in rows:
+        nm = norm_text(r.get("name") or r.get("item_name") or r.get("ชื่อรายการ"))
+        if nm.lower() == item_name.lower():
+            return redirect("/medicine/list/" + quote("อื่นๆ"))
+
+    # 3) เพิ่ม
+    payload = {
+        "type": "other",                 # ✅ เพิ่ม
+        "group_name": "อื่นๆ",            # ✅ เพิ่ม
+        "name": item_name,
+        "benefit": "",                   # ✅ เพิ่ม
+        "min_qty": 0,                    # ✅ เพิ่ม
+        "qty": 0,                        # ✅ เพิ่ม (ให้เป็นค่าเริ่มต้น)
+        "expire_date": "",               # ✅ เพิ่ม (ถ้าจะใช้จริงไปอยู่ใน lot เป็นหลักก็ได้)
+        "used": 0,                       # ✅ เพิ่ม
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # ✅ ให้ฟอร์แมตเหมือนตารางอื่น
+    }
+
+    add_res = gas_append("other_item", payload)
+    if not add_res.get("ok"):
+        return f"เพิ่มรายการอื่นๆ ไม่สำเร็จ: {add_res}", 500
+
+    return redirect("/medicine/list/" + quote("อื่นๆ"))
+
+@app.get("/debug/other_item")
+@login_required
+def debug_other_item():
+    return jsonify(gas_list("other_item", 20))
+
+
+@app.route("/other/item/<int:item_id>/delete", methods=["POST"])
+@admin_required
+def other_delete_item(item_id):
+    # 1) หา item ก่อน เพื่อรู้ชื่อ (ไว้ลบ lot ที่ผูกด้วย)
+    item_res = gas_get("other_item", item_id)
+    if not item_res.get("ok") or not item_res.get("data"):
+        return redirect("/medicine/list/" + quote("อื่นๆ"))
+
+    item_name = str(item_res["data"].get("name", "")).strip()
+
+    # 2) ลบ lots ของ item นี้ทั้งหมด
+    lots_res = gas_list("other_lot", 5000)
+    if lots_res.get("ok"):
+        for l in lots_res.get("data", []):
+            if str(l.get("item_name", "")).strip().lower() == item_name.lower():
+                gas_delete("other_lot", l.get("id"))
+
+    # 3) ลบ item
+    gas_delete("other_item", item_id)
+    return redirect("/medicine/list/" + quote("อื่นๆ"))
+
+@app.route("/medicine/<int:med_id>/delete", methods=["POST"])
+@admin_required
+def medicine_delete(med_id):
+    # ดึงข้อมูลยา/เวชภัณฑ์ เพื่อรู้ type และ group
+    med_res = gas_get("medicine", med_id)
+    group_name = ""
+    mtype = ""
+
+    if med_res.get("ok") and med_res.get("data"):
+        group_name = str(med_res["data"].get("group_name", "")).strip()
+        mtype = str(med_res["data"].get("type", "")).strip().lower()
+
+    # ลบ lots ที่ผูกกับ med_id (ใช้ตารางเดียวกัน)
+    lots_res = gas_list("medicine_lot", 5000)
+    if lots_res.get("ok"):
+        for l in lots_res.get("data", []):
+            if str(l.get("medicine_id", "")) == str(med_id):
+                gas_delete("medicine_lot", l.get("id"))
+
+    # ลบ medicine/supply ตัวหลัก
+    gas_delete("medicine", med_id)
+
+    # ✅ ถ้าเป็นเวชภัณฑ์ให้กลับไปหน้าเวชภัณฑ์
+    if mtype == "supply":
+        return redirect("/supply")
+
+    # ของเดิม (ยา)
+    if group_name:
+        return redirect("/medicine/list/" + quote(group_name))
+    return redirect("/medicine/group")
+
+
+@app.route("/other/<path:item_name>")
+def other_item_detail(item_name):
+    item_name = unquote(item_name).strip()
+
+    check = gas_list("other_item", 5000)
+    exists = False
+    if check.get("ok"):
+        for r in check.get("data", []):
+            if str(r.get("name", "")).strip().lower() == item_name.lower():
+                exists = True
+                break
+    if not exists:
+        return redirect(url_for("medicine_list", group="อื่นๆ"))
+
+    lots_res = gas_list("other_lot", 5000)
+    lots = []
+    if lots_res.get("ok"):
+        for l in lots_res.get("data", []):
+            if str(l.get("item_name", "")).strip().lower() == item_name.lower():
+                lots.append(l)
+    lots.sort(key=lambda x: x.get("expire_date", ""))
+
+    # ✅ back ไปหน้ารายการอื่นๆ
+    back_url = url_for("medicine_list", group="อื่นๆ")
+
+    return render_template("other_item_lot.html",
+                           group="อื่นๆ",
+                           item_name=item_name,
+                           lots=lots,
+                           back_url=back_url)
+
+
+@app.route("/other/<path:item_name>/add_lot", methods=["POST"])
+def other_add_lot(item_name):
+    item_name = unquote(item_name).strip()
+
+    expire_date = (request.form.get("expire_date") or "").strip()
+    qty = int(request.form.get("qty", 0) or 0)
+    price = float(request.form.get("price", 0) or 0)
+
+    if not expire_date or qty <= 0 or price <= 0:
+        return "ข้อมูลไม่ครบหรือไม่ถูกต้อง", 400
+
+    all_lots = gas_list("other_lot", 5000)
+    rows = all_lots.get("data", []) if all_lots.get("ok") else []
+
+    existing = None
+    for lot in rows:
+        if str(lot.get("item_name", "")).strip().lower() == item_name.lower() and str(lot.get("expire_date", "")).strip() == expire_date:
+            existing = lot
+            break
+
+    if existing:
+        new_qty_total = int(existing.get("qty_total", 0)) + qty
+        new_qty_remain = int(existing.get("qty_remain", 0)) + qty
+        new_price_per_lot = float(existing.get("price_per_lot", 0)) + price
+        new_price_per_unit = new_price_per_lot / new_qty_total if new_qty_total > 0 else 0
+
+        gas_update("other_lot", existing["id"], {
+            "qty_total": new_qty_total,
+            "qty_remain": new_qty_remain,
+            "price_per_lot": new_price_per_lot,
+            "price_per_unit": round(new_price_per_unit, 4)
+        })
+    else:
+        count = 0
+        for lot in rows:
+            if str(lot.get("item_name", "")).strip().lower() == item_name.lower():
+                count += 1
+
+        lot_name = f"LOT {count + 1}"
+        price_per_unit = price / qty if qty > 0 else 0
+
+        gas_append("other_lot", {
+            "item_name": item_name,
+            "lot_name": lot_name,
+            "expire_date": expire_date,
+            "qty_total": qty,
+            "qty_remain": qty,
+            "price_per_lot": price,
+            "price_per_unit": round(price_per_unit, 4),
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    return redirect("/other/" + quote(item_name))
+
+@app.route("/other_lot/<int:lot_id>/delete", methods=["POST"])
+def other_delete_lot(lot_id):
+    # ลบได้เลย แล้วเด้งกลับไปหน้าก่อน
+    lot_res = gas_get("other_lot", lot_id)
+    if lot_res.get("ok") and lot_res.get("data"):
+        item_name = str(lot_res["data"].get("item_name", "")).strip()
+        gas_delete("other_lot", lot_id)
+        return redirect("/other/" + quote(item_name))
+
+    return redirect("/medicine/list/" + quote("อื่นๆ"))
+
+
 
 # ============================================
 # MEDICINE DETAIL & LOT
 # ============================================
 
+
 @app.route("/medicine/<int:med_id>")
 def medicine_detail(med_id):
-    # ดึงข้อมูลยา
     med_res = gas_get("medicine", med_id)
     if not med_res.get("ok") or not med_res.get("data"):
         return "ไม่พบข้อมูล", 404
-    
+
     med = med_res["data"]
-    
-    # ดึง Lots ของยานี้
-    # เปลี่ยนมาใช้ gas_list แล้ว filter เองเหมือนกัน เพื่อความชัวร์
+
     all_lots = gas_list("medicine_lot", 5000)
     lots = []
     if all_lots.get("ok"):
         for l in all_lots.get("data", []):
             if str(l.get("medicine_id", "")) == str(med_id):
                 lots.append(l)
-    
-    # เรียงตาม expire_date
     lots.sort(key=lambda x: x.get("expire_date", ""))
-    
-    return render_template("medicine_lot.html", med=med, lots=lots)
+
+    # ✅ ถ้าเป็นเวชภัณฑ์ ให้กลับไปหน้า /supply
+    mtype = str(med.get("type", "")).strip().lower()
+    if mtype == "supply":
+        back_url = url_for("supply_list")   # /supply
+    else:
+        group_name = str(med.get("group_name", "")).strip()
+        back_url = url_for("medicine_list", group=group_name) if group_name else url_for("medicine_group")
+
+    return render_template("medicine_lot.html", med=med, lots=lots, back_url=back_url)
+
 
 @app.route("/medicine/<int:med_id>/add_lot", methods=["POST"])
 def add_lot(med_id):
@@ -433,6 +680,42 @@ def record():
     
     return render_template("record.html")
 
+
+@app.route("/medicine/add", methods=["POST"])
+def medicine_add():
+    group = norm_text(request.form.get("group", ""))
+    name = norm_text(request.form.get("name", ""))
+    mtype = norm_text(request.form.get("type", "medicine")).lower()  # เผื่ออนาคตเพิ่ม supply
+
+    if not group or not name:
+        return "กรอกข้อมูลไม่ครบ", 400
+
+    # กันซ้ำ
+    res = gas_list("medicine", 5000)
+    if res.get("ok"):
+        for m in res.get("data", []):
+            if norm_text(m.get("group_name","")) == group and norm_text(m.get("name","")).lower() == name.lower():
+                return redirect("/medicine/list/" + quote(group))
+
+    payload = {
+        "type": mtype,                 # medicine / supply
+        "group_name": group,
+        "name": name,
+        "benefit": "",
+        "min_qty": 0,
+        "qty": 0,
+        "expire_date": "",
+        "used": 0
+    }
+
+    r = gas_append("medicine", payload)
+
+    if not r.get("ok"):
+        return f"เพิ่มไม่สำเร็จ: {r}", 500
+
+    return redirect("/medicine/list/" + quote(group))
+
+
 # ============================================
 # TREATMENT
 # ============================================
@@ -464,28 +747,42 @@ def treatment_form():
             if not isinstance(items, list) or len(items) == 0:
                 return "กรุณาเพิ่มยาอย่างน้อย 1 รายการ", 400
             
+            # ✅ เอากลุ่มอาการจากฟอร์มไว้ใช้เป็น fallback
+            form_group = (request.form.get("symptom_group") or request.form.get("group") or "").strip()
+
             # ตรวจ stock และตัด stock
             for it in items:
                 lot_id = it.get("lot_id")
                 qty = int(it.get("qty") or 0)
-                
+
                 if not lot_id or qty <= 0:
                     return "ข้อมูล Lot/จำนวนไม่ถูกต้อง", 400
-                
+
+                # ✅ อ่าน type ของรายการ (ยาหรืออื่นๆ)
+                item_type = str(it.get("type") or it.get("item_type") or "").strip().lower()
+
+                # ✅ fallback เผื่อ JS ยังไม่ได้ส่ง type มา แต่เลือกกลุ่มอาการเป็น "อื่นๆ"
+                if not item_type and form_group == "อื่นๆ":
+                    item_type = "other"
+
+                # ✅ เลือกตาราง lot ให้ถูก
+                lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
                 # ดึง lot ปัจจุบัน
-                lot_res = gas_get("medicine_lot", lot_id)
+                lot_res = gas_get(lot_table, lot_id)
                 if not lot_res.get("ok") or not lot_res.get("data"):
                     return "ไม่พบ Lot", 404
-                
+
                 lot = lot_res["data"]
                 current_remain = int(lot.get("qty_remain", 0))
-                
+
                 if current_remain < qty:
                     return f"จำนวนคงเหลือไม่พอ (Lot {lot_id})", 400
-                
+
                 # ตัด stock
                 new_remain = current_remain - qty
-                gas_update_field("medicine_lot", lot_id, "qty_remain", new_remain)
+                gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
+
             
             # บันทึกการรักษา
             visit_date = (request.form.get("visit_date") or request.form.get("date") or "").strip()
@@ -542,12 +839,19 @@ def api_treatment_edit(id):
     
     # คืน stock Lot เดิม
     for m in old_meds:
-        if m.get("lot_id"):
-            lot_res = gas_get("medicine_lot", m["lot_id"])
-            if lot_res.get("ok") and lot_res.get("data"):
-                current = int(lot_res["data"].get("qty_remain", 0))
-                new_remain = current + int(m.get("qty", 0))
-                gas_update_field("medicine_lot", m["lot_id"], "qty_remain", new_remain)
+        lot_id = m.get("lot_id")
+        if not lot_id:
+            continue
+
+        item_type = str(m.get("type") or m.get("item_type") or "").strip().lower()
+        lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
+        lot_res = gas_get(lot_table, lot_id)
+        if lot_res.get("ok") and lot_res.get("data"):
+            current = int(lot_res["data"].get("qty_remain", 0))
+            new_remain = current + int(m.get("qty", 0) or 0)
+            gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
+
     
     # ตัด stock ตามรายการใหม่
     try:
@@ -556,12 +860,22 @@ def api_treatment_edit(id):
         new_meds = []
     
     for m in new_meds:
-        if m.get("lot_id"):
-            lot_res = gas_get("medicine_lot", m["lot_id"])
-            if lot_res.get("ok") and lot_res.get("data"):
-                current = int(lot_res["data"].get("qty_remain", 0))
-                new_remain = current - int(m.get("qty", 0))
-                gas_update_field("medicine_lot", m["lot_id"], "qty_remain", new_remain)
+        lot_id = m.get("lot_id")
+        qty = int(m.get("qty", 0) or 0)
+        if not lot_id or qty <= 0:
+            continue
+
+        item_type = str(m.get("type") or m.get("item_type") or "").strip().lower()
+        lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
+        lot_res = gas_get(lot_table, lot_id)
+        if lot_res.get("ok") and lot_res.get("data"):
+            current = int(lot_res["data"].get("qty_remain", 0))
+            if current < qty:
+                return {"success": False, "message": "จำนวนคงเหลือไม่พอ"}
+            new_remain = current - qty
+            gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
+
     
     # update treatment
     gas_update("treatment", id, data)
@@ -583,12 +897,18 @@ def api_treatment_delete(id):
     for it in old_items:
         lot_id = it.get("lot_id")
         qty = int(it.get("qty") or 0)
-        if lot_id and qty > 0:
-            lot_res = gas_get("medicine_lot", lot_id)
-            if lot_res.get("ok") and lot_res.get("data"):
-                current = int(lot_res["data"].get("qty_remain", 0))
-                new_remain = current + qty
-                gas_update_field("medicine_lot", lot_id, "qty_remain", new_remain)
+        if not lot_id or qty <= 0:
+            continue
+
+        item_type = str(it.get("type") or it.get("item_type") or "").strip().lower()
+        lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
+        lot_res = gas_get(lot_table, lot_id)
+        if lot_res.get("ok") and lot_res.get("data"):
+            current = int(lot_res["data"].get("qty_remain", 0))
+            new_remain = current + qty
+            gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
+
     
     # ลบ treatment
     gas_delete("treatment", id)
@@ -598,21 +918,58 @@ def api_treatment_delete(id):
 def treatment_list():
     res = gas_list("treatment", 1000)
     rows = res.get("data", []) if res.get("ok") else []
-    
+
     data = []
     for r in rows:
         data.append({
             "id": r.get("id"),
             "visit_date": r.get("visit_date"),
             "patient_name": r.get("patient_name"),
+            "symptom_group": r.get("symptom_group"),  # ✅ เพิ่มบรรทัดนี้
             "medicine": r.get("medicine")
         })
-    
+
     return jsonify(data)
+
 
 # ============================================
 # MEDICINE API
 # ============================================
+
+@app.get("/api/other_items")
+@login_required
+def api_other_items():
+    res = gas_list("other_item", 5000)
+    items = []
+    if res.get("ok"):
+        for r in res.get("data", []):
+            name = norm_text(r.get("name", ""))
+            if name:
+                items.append({"id": r.get("id"), "name": name})
+    items.sort(key=lambda x: x["name"].lower())
+    return jsonify(items)
+
+
+@app.get("/api/other_lots")
+@login_required
+def api_other_lots():
+    item_name = norm_text(request.args.get("item_name", ""))
+    all_lots = gas_list("other_lot", 5000)
+
+    lots = []
+    if all_lots.get("ok"):
+        for r in all_lots.get("data", []):
+            if norm_text(r.get("item_name", "")).lower() == item_name.lower():
+                if int(r.get("qty_remain", 0) or 0) > 0:
+                    lots.append({
+                        "id": r.get("id"),
+                        "name": r.get("lot_name"),
+                        "remain": r.get("qty_remain"),
+                        "price": r.get("price_per_unit")
+                    })
+
+    # ให้รูปแบบเหมือน /api/medicine_lots
+    return jsonify({"lots": lots})
 
 @app.route("/api/medicine_list")
 def api_medicine_list():
@@ -668,19 +1025,23 @@ def api_medicine_lots():
 def api_cut_stock():
     data = request.json
     lot_id = data.get("lot_id")
-    qty = int(data.get("qty", 0))
-    
-    lot_res = gas_get("medicine_lot", lot_id)
+    qty = int(data.get("qty", 0) or 0)
+
+    item_type = str(data.get("type") or data.get("item_type") or "").strip().lower()
+    lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
+    lot_res = gas_get(lot_table, lot_id)
     if not lot_res.get("ok") or not lot_res.get("data"):
         return {"success": False, "message": "ไม่พบ Lot"}
-    
+
     current = int(lot_res["data"].get("qty_remain", 0))
     if current < qty:
         return {"success": False, "message": "จำนวนคงเหลือไม่พอ"}
-    
+
     new_remain = current - qty
-    gas_update_field("medicine_lot", lot_id, "qty_remain", new_remain)
+    gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
     return {"success": True}
+
 
 # ============================================
 # WASTE (ขยะติดเชื้อ)
