@@ -35,68 +35,30 @@
       box-shadow:0 4px 10px rgba(0,0,0,0.2);
       transition:0.2s;
     }
-
     .back-menu-btn:hover{ background:#218838; }
 
-
-    .add-med-btn{
+    /* ปุ่มเพิ่ม (เหมือนหน้าเวชภัณฑ์) */
+    .add-btn{
       position:absolute;
       top:15px;
       right:15px;
-
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); /* ม่วง */
-      color:#fff;
-      border:none;
-      border-radius:12px;
-
-      padding:14px 22px;     /* ขยายขนาด */
-      font-size:18px;        /* ตัวอักษรใหญ่ขึ้น */
-      font-weight:800;
-      cursor:pointer;
-
-      box-shadow:0 6px 16px rgba(0,0,0,0.22);
-      display:flex;
-      align-items:center;
-      gap:10px;
-      transition:0.2s;
-    }
-
-    .add-med-btn:hover{
-      filter:brightness(0.95);
-      transform: translateY(-1px);
-    }
-
-    .add-item-btn{
-      position:absolute;
-      top:15px;
-      right:15px;
-
       background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
       color:#fff;
       border:none;
-      border-radius:12px;
-
-      padding:14px 22px;
+      padding:16px 22px;
       font-size:18px;
-      font-weight:800;
+      border-radius:14px;
       cursor:pointer;
-
-      box-shadow:0 6px 16px rgba(0,0,0,0.22);
+      font-weight:800;
+      box-shadow:0 10px 22px rgba(137, 137, 137, 0.35);
       display:flex;
       align-items:center;
       gap:10px;
       transition:0.2s;
     }
-
-    .add-item-btn i{
-      color:#fff !important;
-    }
-
-    .add-item-btn:hover{
-      filter:brightness(0.95);
-      transform: translateY(-1px);
-    }
-
+    .add-btn i{ font-size:20px; }
+    .add-btn:hover{ transform: translateY(-2px); filter:brightness(0.98); }
+    .add-btn:active{ transform: translateY(0px); }
 
     .title{ text-align:center; font-size:32px; font-weight:700; margin:10px 0 30px; }
 
@@ -106,12 +68,8 @@
       padding:10px 0 0;
     }
 
-    .med-card{
-      position:relative;
-      width:360px;
-    }
+    .med-card{ position:relative; width:360px; }
 
-    /* ปรับให้ med-box กว้างเต็ม wrapper */
     .med-box{
       width:100%;
       height:120px;
@@ -126,54 +84,92 @@
     }
     .med-box:hover{ transform:translateY(-3px); box-shadow:0 10px 25px rgba(0,0,0,0.25); }
 
-    /* ปุ่มลบ */
-    .del-form{
-      position:absolute;
-      top:10px;
-      right:10px;
-      margin:0;
-    }
+    .del-form{ position:absolute; top:10px; right:10px; margin:0; }
     .del-btn{
-      width:42px;
-      height:42px;
-      border:none;
-      border-radius:12px;
-      cursor:pointer;
+      width:42px; height:42px; border:none; border-radius:12px; cursor:pointer;
       background:rgba(255,255,255,0.85);
       box-shadow:0 4px 10px rgba(0,0,0,0.18);
-      display:flex;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#d12b2b;
+    }
+    .del-btn:hover{ background:#fff; transform:scale(1.05); }
+
+    /* ===== Modal (เหมือน supply_list) ===== */
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.45);
+      display:none;
       align-items:center;
       justify-content:center;
-      font-size:16px;
-      color:#d12b2b;
+      padding:20px;
+      z-index:999;
     }
-    .del-btn:hover{
-      background:#fff;
-      transform:scale(1.05);
-    }
+    .modal.show{ display:flex; }
 
-    /* ===== Modal ===== */
-    .modal-bg{
-      position:fixed; inset:0; background:rgba(0,0,0,0.35);
-      display:none; align-items:center; justify-content:center;
-      z-index:9999;
+    .modal-card{
+      width:100%;
+      max-width:520px;
+      background:#fff;
+      border-radius:14px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.35);
+      padding:22px;
     }
-    .modal{
-      width:min(720px, 92vw);
-      background:#fff; border-radius:16px; padding:26px;
-      box-shadow:0 18px 50px rgba(0,0,0,0.35);
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:14px;
     }
-    .modal h3{ margin:0 0 14px; font-size:24px; }
-    label{ font-weight:700; display:block; margin-top:14px; }
-    input{
-      width:100%; padding:12px; font-size:22px; margin-top:6px;
-      border-radius:10px; border:1.5px solid #d6e2ec; background:#fbfdff;
+    .modal-head h3{ margin:0; font-size:20px; }
+
+    .close-btn{
+      border:none;
+      background:#f1f1f1;
+      width:36px;
+      height:36px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:18px;
     }
-    .modal-actions{ display:flex; gap:12px; justify-content:flex-end; margin-top:18px; }
-    .btn{ border:none; border-radius:10px; padding:10px 16px; font-size:18px; cursor:pointer; font-weight:800; }
-    .btn-cancel{ background:#e0e0e0; }
-    .btn-save{ background:#4a90e2; color:#fff; }
-    .btn-save:hover{ background:#357abd; }
+    .close-btn:hover{ filter:brightness(0.95); }
+
+    .form-row{ margin-top:12px; }
+    .form-row label{
+      display:block;
+      font-size:14px;
+      font-weight:700;
+      margin-bottom:6px;
+      color:#333;
+    }
+    .form-row input{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid #d9d9d9;
+      border-radius:10px;
+      font-size:16px;
+      outline:none;
+      font-family:'Sarabun',sans-serif;
+    }
+    .form-row input:focus{ border-color:#3b82f6; }
+
+    .form-actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:16px;
+    }
+    .btn{
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
+      font-family:'Sarabun',sans-serif;
+    }
+    .btn-cancel{ background:#e5e7eb; }
+    .btn-save{ background:#3b82f6; color:#fff; }
 
     .footer{ width:100%; background:#dcdcdc; text-align:center; padding:18px; font-size:14px; color:#555; margin-top:60px; }
   </style>
@@ -196,21 +192,18 @@
       <a href="/medicine/group" class="back-menu-btn">⬅ ย้อนกลับ</a>
     </div>
 
-    <button class="add-item-btn" onclick="openAddItem()">
-      <i class="fa-solid fa-plus"></i>
-      เพิ่มรายการอื่นๆ
+    {% if session.get('role') == 'admin' %}
+    <button type="button" class="add-btn" id="openAdd">
+      <i class="fa-solid fa-plus"></i> เพิ่มชื่อยา/เวชภัณฑ์
     </button>
+    {% endif %}
 
     <div class="title">{{ group }}</div>
 
     <div class="grid">
       {% for m in meds %}
         <div class="med-card">
-          <a class="med-box"
-            href="{{ url_for('medicine_detail', med_id=m.id, back=url_for('medicine_list', group=group)) }}">
-            {{ m.name }}
-          </a>
-
+          <a class="med-box" href="/medicine/{{ m.id }}">{{ m.name }}</a>
 
           {% if session.get("role") == "admin" %}
           <form class="del-form" method="post" action="/medicine/{{ m.id }}/delete"
@@ -224,25 +217,29 @@
       {% endfor %}
     </div>
 
-
     {% if not meds %}
       <p style="color:#999; margin-top:20px;">ยังไม่มีรายการในกลุ่มนี้</p>
     {% endif %}
   </div>
 
-  <!-- Modal -->
-  <div class="modal-bg" id="modalBg" onclick="closeIfBg(event)">
-    <div class="modal">
-      <h3>➕ เพิ่มชื่อยา/เวชภัณฑ์ (กลุ่ม: {{ group }})</h3>
+  <!-- Modal เพิ่มยา/เวชภัณฑ์ -->
+  <div class="modal" id="addModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>เพิ่มชื่อยา/เวชภัณฑ์ (กลุ่ม: {{ group }})</h3>
+        <button type="button" class="close-btn" id="closeAdd" aria-label="close">✕</button>
+      </div>
 
-      <form method="post" action="/medicine/add" id="addMedForm">
+      <form method="post" action="/medicine/add">
         <input type="hidden" name="group" value="{{ group }}">
 
-        <label>ชื่อยา/เวชภัณฑ์</label>
-        <input type="text" name="name" required>
+        <div class="form-row">
+          <label>ชื่อยา/เวชภัณฑ์</label>
+          <input type="text" name="name" id="medName" required>
+        </div>
 
-        <div class="modal-actions">
-          <button type="button" class="btn btn-cancel" onclick="closeAddMed()">ยกเลิก</button>
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" id="cancelAdd">ยกเลิก</button>
           <button type="submit" class="btn btn-save">บันทึก</button>
         </div>
       </form>
@@ -254,23 +251,37 @@
   </div>
 
   <script>
-    // (JAVA ในโจทย์) — ใช้ JavaScript สำหรับ Modal
-    const modalBg = document.getElementById("modalBg");
-    const medName = document.getElementById("medName");
+    const openBtn = document.getElementById("openAdd");
+    const modal = document.getElementById("addModal");
+    const closeBtn = document.getElementById("closeAdd");
+    const cancelBtn = document.getElementById("cancelAdd");
 
-    function openAddMed(){
-      modalBg.style.display = "flex";
-      setTimeout(() => medName.focus(), 50);
+    function openModal(){
+      if(!modal) return;
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+      const input = document.getElementById("medName");
+      if(input) input.focus();
     }
-    function closeAddMed(){
-      modalBg.style.display = "none";
-      medName.value = "";
+
+    function closeModal(){
+      if(!modal) return;
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden", "true");
     }
-    function closeIfBg(e){
-      if(e.target === modalBg) closeAddMed();
+
+    if(openBtn) openBtn.addEventListener("click", openModal);
+    if(closeBtn) closeBtn.addEventListener("click", closeModal);
+    if(cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+    if(modal){
+      modal.addEventListener("click", (e) => {
+        if(e.target === modal) closeModal();
+      });
     }
+
     document.addEventListener("keydown", (e) => {
-      if(e.key === "Escape") closeAddMed();
+      if(e.key === "Escape") closeModal();
     });
   </script>
 </body>
