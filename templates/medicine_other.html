@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ group }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    *{ box-sizing:border-box; }
+    body{ font-family:'Sarabun',sans-serif; background:#f4f6f8; margin:0; }
+    .header{ width:100%; background:#fff; border-bottom:1px solid #e0e0e0; padding:14px 40px; display:flex; align-items:center; justify-content:space-between; }
+    .header-left{ display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; color:#5b2c83; }
+    .header-left i{ font-size:26px; }
+    .header-right{ display:flex; align-items:center; gap:16px; font-size:14px; }
+    .logout-btn{ background:#ff6b6b; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:600; }
+
+    .container{
+      max-width:1500px; background:#fff; margin:40px auto; padding:40px;
+      border-radius:16px; box-shadow:0 8px 25px rgba(0,0,0,0.25);
+      position:relative;
+    }
+
+    .top-bar{ text-align:left; margin-bottom:10px; }
+
+    .back-menu-btn{
+    display:inline-block;
+    background:#28a745;
+    color:white;
+    padding:10px 20px;
+    font-size:20px;
+    border-radius:8px;
+    text-decoration:none;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+    transition:0.2s;
+    }
+
+    .back-menu-btn:hover{ background:#218838; }
+
+
+    .add-item-btn{
+    position:absolute;
+    top:15px;
+    right:15px;
+
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); /* ม่วง */
+    color:#fff;
+    border:none;
+    border-radius:12px;
+
+    padding:14px 22px;     /* ขยายขนาด */
+    font-size:18px;        /* ตัวอักษรใหญ่ขึ้น */
+    font-weight:800;
+    cursor:pointer;
+
+    box-shadow:0 6px 16px rgba(0,0,0,0.22);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    transition:0.2s;
+    }
+
+    .add-item-btn i{
+    color:#fff !important;
+    }
+
+
+    .add-item-btn:hover{
+    filter:brightness(0.95);
+    transform: translateY(-1px);
+    }
+
+
+    .title{ text-align:center; font-size:32px; font-weight:700; margin:10px 0 30px; }
+
+        .grid{
+        display:flex; flex-wrap:wrap; gap:22px;
+        justify-content:flex-start;
+        padding:10px 0 0;
+        }
+
+        /* wrapper สำหรับวางปุ่มลบ */
+        .item-card{
+        position:relative;
+        width:360px;
+        }
+
+        /* กล่องสีฟ้าเหมือนหน้ากลุ่มอาการ */
+        .item-box{
+        width:100%;
+        height:120px;
+        background: linear-gradient(135deg, #4a90e2 0%, #7bb7ff 100%);
+        border-radius:16px;
+        text-decoration:none;
+        color:#0b2a4a;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:26px;
+        font-weight:800;
+        box-shadow:0 6px 18px rgba(0,0,0,0.18);
+        transition:all .2s ease;
+        text-align:center;
+        padding:0 18px;
+        }
+        .item-box:hover{
+        transform:translateY(-3px);
+        box-shadow:0 10px 25px rgba(0,0,0,0.25);
+        }
+
+        /* ปุ่มลบ */
+        .del-form{
+        position:absolute;
+        top:10px;
+        right:10px;
+        margin:0;
+        }
+        .del-btn{
+        width:42px;
+        height:42px;
+        border:none;
+        border-radius:12px;
+        cursor:pointer;
+        background:rgba(255,255,255,0.85);
+        box-shadow:0 4px 10px rgba(0,0,0,0.18);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:16px;
+        color:#d12b2b;
+        }
+        .del-btn:hover{
+        background:#fff;
+        transform:scale(1.05);
+        }
+
+
+    /* ===== Modal ===== */
+    .modal-bg{
+      position:fixed; inset:0; background:rgba(0,0,0,0.35);
+      display:none; align-items:center; justify-content:center;
+      z-index:9999;
+    }
+    .modal{
+      width:min(720px, 92vw);
+      background:#fff; border-radius:16px; padding:26px;
+      box-shadow:0 18px 50px rgba(0,0,0,0.35);
+    }
+    .modal h3{ margin:0 0 14px; font-size:24px; }
+    label{ font-weight:700; display:block; margin-top:14px; }
+    input{
+      width:100%; padding:12px; font-size:22px; margin-top:6px;
+      border-radius:10px; border:1.5px solid #d6e2ec; background:#fbfdff;
+    }
+    .modal-actions{ display:flex; gap:12px; justify-content:flex-end; margin-top:18px; }
+    .btn{ border:none; border-radius:10px; padding:10px 16px; font-size:18px; cursor:pointer; font-weight:800; }
+    .btn-cancel{ background:#e0e0e0; }
+    .btn-save{ background:#4a90e2; color:#fff; }
+    .btn-save:hover{ background:#357abd; }
+
+    .footer{ width:100%; background:#dcdcdc; text-align:center; padding:18px; font-size:14px; color:#555; margin-top:60px; }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-left">
+      <i class="fa-solid fa-stethoscope"></i>
+      ห้องพยาบาล CPF ขอนแก่น
+    </div>
+    <div class="header-right">
+      {{ session.get('user_name', 'User') }} ({{ session.get('role', 'user') }}) | หน่วยงาน Safety
+      <a href="/logout" class="logout-btn">ออก</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="top-bar">
+     <a href="/medicine/group" class="back-menu-btn">⬅ ย้อนกลับ</a>
+    </div>
+
+    <button class="add-item-btn" onclick="openAddItem()">
+    <i class="fa-solid fa-plus"></i>
+    เพิ่มรายการอื่นๆ
+    </button>
+
+
+    <div class="title">{{ group }}</div>
+
+    <div class="grid">
+    {% for it in items %}
+        <div class="item-card">
+        <a class="item-box" href="/other/{{ it.name | urlencode }}">{{ it.name }}</a>
+
+        {% if session.get("role") == "admin" %}
+        <form class="del-form" method="post" action="/other/item/{{ it.id }}/delete"
+                onsubmit="return confirm('ยืนยันลบรายการ: {{ it.name }} ?\n(ระบบจะลบ LOT ของรายการนี้ด้วย)');">
+            <button type="submit" class="del-btn" title="ลบรายการ">
+            <i class="fa-solid fa-trash"></i>
+            </button>
+        </form>
+        {% endif %}
+        </div>
+    {% endfor %}
+    </div>
+
+
+    {% if not items %}
+      <p style="color:#999; margin-top:20px;">ยังไม่มีรายการในหมวด “อื่นๆ”</p>
+    {% endif %}
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-bg" id="modalBg" onclick="closeIfBg(event)">
+    <div class="modal">
+      <h3>➕ เพิ่มรายการอื่นๆ</h3>
+
+      <form method="post" action="/other/add_item" id="addItemForm">
+        <label>ชื่อรายการ (อุปกรณ์/รายการพิเศษ)</label>
+        <input type="text" name="name" required>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-cancel" onclick="closeAddItem()">ยกเลิก</button>
+          <button type="submit" class="btn btn-save">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="footer">© 2025 Safety Officer, CPF Khon Kaen Feedmill</div>
+
+  <script>
+    const modalBg = document.getElementById("modalBg");
+    const itemName = document.getElementById("itemName");
+
+    function openAddItem(){
+      modalBg.style.display = "flex";
+      setTimeout(() => itemName.focus(), 50);
+    }
+    function closeAddItem(){
+      modalBg.style.display = "none";
+      itemName.value = "";
+    }
+    function closeIfBg(e){
+      if(e.target === modalBg) closeAddItem();
+    }
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeAddItem();
+    });
+  </script>
+</body>
+</html>
