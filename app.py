@@ -1618,9 +1618,13 @@ def medical_certificate_print_temp():
     return render_template("certificate_print.html", record=None)
 
 @app.route("/medical_certificate/print/<int:id>")
+@login_required
 def medical_certificate_print(id):
     res = gas_get("medical_certificate", id)
+    if not res.get("ok") or not res.get("data"):
+        return "ไม่พบข้อมูลใบรับรองแพทย์", 404
     return render_template("certificate_print.html", record=res["data"])
+
 
 
 # ============================================
@@ -1665,11 +1669,11 @@ def api_medical_certificate_add():
 @app.route("/api/medical_certificate/<int:id>")
 @login_required
 def api_medical_certificate_get(id):
-    """Get medical certificate by ID"""
     res = gas_get("medical_certificate", id)
     if res.get("ok") and res.get("data"):
-        return jsonify({"success": True, "data": res["data"]})
+        return jsonify({"success": True, "data": res["data"], "record": res["data"]})
     return jsonify({"success": False, "message": "Not found"})
+
 
 @app.route("/api/medical_certificate/edit/<int:id>", methods=["POST"])
 @login_required
