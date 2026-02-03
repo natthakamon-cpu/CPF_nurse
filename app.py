@@ -677,7 +677,13 @@ def add_lot(med_id):
     expire_date = request.form.get("expire_date", "").strip()
     qty = int(request.form.get("qty", 0))
     price = float(request.form.get("price", 0))
-    
+
+    # ✅ (เพิ่ม) ดึงชื่อยา/เวชภัณฑ์ เพื่อบันทึกลง medicine_lot.item_name
+    med_res = gas_get("medicine", med_id)
+    item_name = ""
+    if med_res.get("ok") and med_res.get("data"):
+        item_name = str(med_res["data"].get("name", "")).strip()
+
     # หา Lot เดิมที่ expire_date เดียวกัน (ใช้ list + filter)
     all_lots = gas_list("medicine_lot", 5000)
     existing_lot = None
@@ -686,34 +692,38 @@ def add_lot(med_id):
             if str(lot.get("medicine_id", "")) == str(med_id) and str(lot.get("expire_date", "")).strip() == expire_date:
                 existing_lot = lot
                 break
-    
+
     if existing_lot:
         # รวม Lot เดิม
         new_qty_total = int(existing_lot.get("qty_total", 0)) + qty
         new_qty_remain = int(existing_lot.get("qty_remain", 0)) + qty
         new_price_per_lot = float(existing_lot.get("price_per_lot", 0)) + price
         new_price_per_unit = new_price_per_lot / new_qty_total if new_qty_total > 0 else 0
-        
+
         gas_update("medicine_lot", existing_lot["id"], {
             "qty_total": new_qty_total,
             "qty_remain": new_qty_remain,
             "price_per_lot": new_price_per_lot,
-            "price_per_unit": new_price_per_unit
+            "price_per_unit": new_price_per_unit,
+
+            # ✅ (แนะนำ) เผื่อ lot เก่าบางแถว item_name ยังว่าง จะได้เติมให้ด้วย
+            "item_name": item_name
         })
+
     else:
         # สร้าง Lot ใหม่
-        # นับจำนวน Lot เดิมของยานี้
         lot_count = 0
         if all_lots.get("ok"):
             for lot in all_lots.get("data", []):
                 if str(lot.get("medicine_id", "")) == str(med_id):
                     lot_count += 1
-        
+
         lot_name = f"LOT {lot_count + 1}"
         price_per_unit = price / qty if qty > 0 else 0
-        
+
         gas_append("medicine_lot", {
             "medicine_id": med_id,
+            "item_name": item_name,   # ✅ (เพิ่ม) บันทึกชื่อยา/เวชภัณฑ์ลงคอลัมน์ใหม่
             "lot_name": lot_name,
             "expire_date": expire_date,
             "qty_total": qty,
@@ -721,8 +731,9 @@ def add_lot(med_id):
             "price_per_lot": price,
             "price_per_unit": price_per_unit
         })
-    
+
     return redirect(f"/medicine/{med_id}")
+
 
 @app.route("/lot/<int:lot_id>/delete", methods=["POST"])
 def delete_lot(lot_id):
