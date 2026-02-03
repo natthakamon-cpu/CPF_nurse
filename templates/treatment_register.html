@@ -283,6 +283,43 @@
       color: #555;
       margin-top: 60px;
     }
+
+        /* คอลัมน์จัดการ: กันขึ้นบรรทัดใหม่ */
+    th.col-actions,
+    td.col-actions{
+      white-space: nowrap;
+      width: 140px;           /* ปรับได้ เช่น 120-160 */
+      text-align: center;
+    }
+
+    /* ห่อไอคอนเป็น flex ให้อยู่แถวเดียว */
+    .action-wrap{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;      /* ✅ ห้ามขึ้นบรรทัด */
+    }
+
+    /* ปุ่มไอคอน */
+    .action-btn{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+
+      cursor: pointer;
+      user-select: none;
+      line-height: 1;
+      font-size: 20px;
+    }
+
+    .action-btn:active{ transform: scale(0.96); }
+    .action-btn.danger{ filter: saturate(1.2); }
+
   </style>
 </head>
 
@@ -521,7 +558,7 @@
             <th>วันที่</th>
             <th>ชื่อ - นามสกุล</th>
             <th>กลุ่มอาการ</th>
-            <th>จัดการ</th>
+            <th class="col-actions">จัดการ</th>
           </tr>
         `;
 
@@ -541,10 +578,12 @@
               <td>${safeText(r.visit_date)}</td>
               <td>${safeText(r.patient_name)}</td>
               <td>${symptomLabel(r.symptom_group)}</td>
-              <td>
-                <span class="action-btn" onclick="viewRecord(${r.id})">👁️</span>
-                <span class="action-btn" onclick="editRecord(${r.id})">✏️</span>
-                <span class="action-btn" onclick="deleteRecord(${r.id})">🗑️</span>
+              <td class="col-actions">
+                <div class="action-wrap">
+                  <span class="action-btn" onclick="viewRecord(${r.id})" title="ดู">👁️</span>
+                  <span class="action-btn" onclick="editRecord(${r.id})" title="แก้ไข">✏️</span>
+                  <span class="action-btn danger" onclick="deleteRecord(${r.id})" title="ลบ">🗑️</span>
+                </div>
               </td>
             </tr>
           `;
