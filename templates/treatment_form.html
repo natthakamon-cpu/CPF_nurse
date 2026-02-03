@@ -423,226 +423,288 @@
     </form>
   </div>
 
-  <script>
-    /* ===============================
-       ELEMENTS
-    ================================ */
-    const symptom = document.getElementById('symptom_group');
-    const medSelect = document.getElementById('medicine_select');
-    const medOther = document.getElementById('medicine_other');
-    const qtyInput = document.getElementById('qty_input');
-    const lotSelect = document.getElementById('lot_select');
-    const table = document.getElementById('medicine_table');
-    const form = document.querySelector("form");
+<script>
+  /* ===============================
+     ELEMENTS
+  ================================ */
+  const symptom   = document.getElementById('symptom_group');
+  const medSelect = document.getElementById('medicine_select');
+  const medOther  = document.getElementById('medicine_other');
+  const qtyInput  = document.getElementById('qty_input');
+  const lotSelect = document.getElementById('lot_select');
+  const table     = document.getElementById('medicine_table');
+  const form      = document.querySelector("form");
 
-    let medicines = [];
+  let medicines = [];
 
-    /* ===============================
-       DATA (ของเดิมคุณ)
-    ================================ */
-    const medicineData = {
-      respiratory: ['Amoxy', 'Bisolvon', 'Mybacin', 'Loratadine', 'Zyetec', 'M.tusis'],
-      digestive: ['Air-x', 'K milk120cc', 'Buscopan', 'Diasgest', 'M.car', 'ORS', 'Paracetamol(500)', 'Motilium', 'K-milk', 'ยาหอม', 'CA-R-Bon'],
-      muscle: ['Balm', 'Mydoclam', 'Norgesic'],
-      brain: ['B1,6,12', 'Dimen', 'ORS', 'Paracetamol(500)'],
-      skin: ['Acyclovir', 'CPM', 'Loratadine', 'Zyetec', '0.1%TA Cream', 'Mycozol', 'Silver cream', 'Calamine lotion'],
-      urinary: ['Paracetamol(500)', 'Norflox'],
-      reproductive: ['Ponstan(500)'],
-      eye: ['Hista oph', 'Op Sar', 'Ointment', 'Brufen(400)', 'Kenalog'],
-      wound: ['Plaster', 'ไม้พันสำลี'],
-      supply: [
-        'ไม้พันสำลี', 'EB:3', 'EB:2', 'Mask', 'Grove Dispose', 'Eyepad', 'Transpore',
-        'Sofatulle', 'ไม้กดลิ้น', 'Gouze', 'Betadine', '70%Alcohol', '0.9%NSS', 'Amora',
-        'ชุดตรวจสารเสพติดMET', 'ชุดตรวจสารเสพติดHTC', 'เซ็ตทำแผล D/S', 'กรรไกร',
-        'ถ้วยยา', 'เข็มกลัด', 'ปรอทวัดไข้', 'ปากคีบปลายทู่', 'ผ้าสามเหลี่ยม',
-        'สายยางห้ามเลือด', 'หลอดหยดยา', 'ถ้วยล้างตา', 'สาย02 Canula',
-        'สาย02 Mask with Bag', 'ถุงยางอนามัย'
-      ]
-    };
+  /* ===============================
+     (OPTIONAL) FALLBACK DATA: ของเดิมคุณ
+     - เก็บไว้ได้เพื่อกันกรณี API มีปัญหา
+  ================================ */
+  const medicineData = {
+    respiratory: ['Amoxy', 'Bisolvon', 'Mybacin', 'Loratadine', 'Zyetec', 'M.tusis'],
+    digestive: ['Air-x', 'K milk120cc', 'Buscopan', 'Diasgest', 'M.car', 'ORS', 'Paracetamol(500)', 'Motilium', 'K-milk', 'ยาหอม', 'CA-R-Bon'],
+    muscle: ['Balm', 'Mydoclam', 'Norgesic'],
+    brain: ['B1,6,12', 'Dimen', 'ORS', 'Paracetamol(500)'],
+    skin: ['Acyclovir', 'CPM', 'Loratadine', 'Zyetec', '0.1%TA Cream', 'Mycozol', 'Silver cream', 'Calamine lotion'],
+    urinary: ['Paracetamol(500)', 'Norflox'],
+    reproductive: ['Ponstan(500)'],
+    eye: ['Hista oph', 'Op Sar', 'Ointment', 'Brufen(400)', 'Kenalog'],
+    wound: ['Plaster', 'ไม้พันสำลี'],
+    supply: [
+      'ไม้พันสำลี', 'EB:3', 'EB:2', 'Mask', 'Grove Dispose', 'Eyepad', 'Transpore',
+      'Sofatulle', 'ไม้กดลิ้น', 'Gouze', 'Betadine', '70%Alcohol', '0.9%NSS', 'Amora',
+      'ชุดตรวจสารเสพติดMET', 'ชุดตรวจสารเสพติดHTC', 'เซ็ตทำแผล D/S', 'กรรไกร',
+      'ถ้วยยา', 'เข็มกลัด', 'ปรอทวัดไข้', 'ปากคีบปลายทู่', 'ผ้าสามเหลี่ยม',
+      'สายยางห้ามเลือด', 'หลอดหยดยา', 'ถ้วยล้างตา', 'สาย02 Canula',
+      'สาย02 Mask with Bag', 'ถุงยางอนามัย'
+    ]
+  };
 
-    /* ===============================
-       HELPERS
-    ================================ */
-    function resetLotAndQty() {
-      lotSelect.innerHTML = '<option value="">Lot</option>';
-      qtyInput.value = "";
-    }
+  /* ===============================
+     HELPERS
+  ================================ */
+  function resetLotAndQty() {
+    lotSelect.innerHTML = '<option value="">Lot</option>';
+    qtyInput.value = "";
+  }
 
-    function getItemType() {
-      if (symptom.value === "other") return "other";
-      if (symptom.value === "supply") return "supply";
-      return "medicine";
-    }
+  function getItemType() {
+    if (symptom.value === "other") return "other";
+    if (symptom.value === "supply") return "supply";
+    return "medicine";
+  }
 
-    async function loadOtherItemsToSelect() {
-      medSelect.innerHTML = '<option value="">-- เลือกรายการ --</option>';
-      try {
-        const res = await fetch("/api/other_items");
-        const items = await res.json(); // [{id,name}]
-        items.forEach(it => {
-          const opt = document.createElement("option");
-          opt.value = it.name;
-          opt.textContent = it.name;
-          medSelect.appendChild(opt);
-        });
-      } catch (e) {
-        console.error("โหลด other_items ไม่สำเร็จ", e);
-        medSelect.style.display = "none";
-        medOther.style.display = "block";
-      }
-    }
+  function showSelectMode() {
+    medSelect.style.display = "block";
+    medOther.style.display  = "none";
+  }
 
-    /* ===============================
-       CHANGE SYMPTOM
-    ================================ */
-    symptom.addEventListener('change', async () => {
-      resetLotAndQty();
+  function showOtherInputMode() {
+    medSelect.style.display = "none";
+    medOther.style.display  = "block";
+    medOther.value = "";
+  }
 
-      medSelect.style.display = 'block';
-      medOther.style.display = 'none';
-      medSelect.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+  function setMedOptions(names) {
+    medSelect.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+    (names || []).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      medSelect.appendChild(opt);
+    });
+  }
 
-      if (symptom.value === 'other') {
-        await loadOtherItemsToSelect();
-        return;
-      }
-
-      (medicineData[symptom.value] || []).forEach(name => {
-        const opt = document.createElement('option');
+  async function loadOtherItemsToSelect() {
+    medSelect.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+    try {
+      const res = await fetch("/api/other_items");
+      const items = await res.json(); // [{id,name}] หรือ list
+      (items || []).forEach(it => {
+        const name = (it && it.name) ? it.name : it;
+        if (!name) return;
+        const opt = document.createElement("option");
         opt.value = name;
         opt.textContent = name;
         medSelect.appendChild(opt);
       });
-    });
+    } catch (e) {
+      console.error("โหลด other_items ไม่สำเร็จ", e);
+      showOtherInputMode();
+    }
+  }
 
-    /* ===============================
-       LOAD LOT (✅ เรียกครั้งเดียวสำหรับ medicine/supply)
-    ================================ */
-    medSelect.addEventListener('change', async () => {
-      lotSelect.innerHTML = '<option value="">Lot</option>';
-      if (!medSelect.value) return;
+  async function loadMedicineItemsByGroup() {
+    resetLotAndQty();
 
-      const itemType = getItemType();
+    // ยังไม่เลือกกลุ่ม
+    if (!symptom.value) {
+      setMedOptions([]);
+      showSelectMode();
+      return;
+    }
 
-      // ✅ CASE: other → ใช้ other_lot
-      if (itemType === "other") {
-        const lotRes = await fetch(`/api/other_lots?item_name=${encodeURIComponent(medSelect.value)}`);
-        const data = await lotRes.json();
+    // ✅ กรณีอื่นๆ
+    if (symptom.value === "other") {
+      showSelectMode();
+      await loadOtherItemsToSelect();
+      return;
+    }
 
-        if (!data.lots || data.lots.length === 0) {
-          console.warn("ไม่พบ LOT ของรายการอื่นๆ:", medSelect.value);
-          return;
-        }
+    // ✅ ดึง label ภาษาไทยจาก option ที่เลือก (เช่น "ระบบทางเดินหายใจ")
+    const groupLabel = symptom.options[symptom.selectedIndex]?.textContent?.trim() || "";
+    const code = symptom.value;
 
-        data.lots.forEach(lot => {
-          const opt = document.createElement('option');
-          opt.value = lot.id;
-          opt.textContent = `${lot.name} (คงเหลือ ${lot.remain})`;
-          opt.dataset.price = lot.price || 0;
-          lotSelect.appendChild(opt);
-        });
-        return;
+    showSelectMode();
+    setMedOptions([]);
+
+    try {
+      const res = await fetch(`/api/medicine_items?group=${encodeURIComponent(groupLabel)}&code=${encodeURIComponent(code)}`);
+      if (!res.ok) throw new Error("API /api/medicine_items ไม่ OK");
+      const data = await res.json(); // {items:[...]} หรือ list
+
+      const items = Array.isArray(data) ? data : (data.items || data.data || []);
+      if (items.length > 0) {
+        setMedOptions(items);
+      } else {
+        // fallback เป็น hardcode เดิม (กันกรณีในชีตยังไม่มีรายการ)
+        const fallback = medicineData[symptom.value] || [];
+        if (fallback.length > 0) setMedOptions(fallback);
+        else showOtherInputMode();
       }
+    } catch (e) {
+      console.warn("ดึงรายการจาก API ไม่สำเร็จ ใช้ fallback:", e);
+      const fallback = medicineData[symptom.value] || [];
+      if (fallback.length > 0) setMedOptions(fallback);
+      else showOtherInputMode();
+    }
+  }
 
-      // ✅ CASE: medicine / supply → เรียกครั้งเดียวด้วย name
-      const lotRes = await fetch(`/api/medicine_lots?name=${encodeURIComponent(medSelect.value)}`);
+  /* ===============================
+     CHANGE SYMPTOM
+  ================================ */
+  symptom.addEventListener('change', loadMedicineItemsByGroup);
+
+  /* ===============================
+     LOAD LOT
+  ================================ */
+  medSelect.addEventListener('change', async () => {
+    lotSelect.innerHTML = '<option value="">Lot</option>';
+    if (!medSelect.value) return;
+
+    const itemType = getItemType();
+
+    // ✅ CASE: other → other_lot
+    if (itemType === "other") {
+      const lotRes = await fetch(`/api/other_lots?item_name=${encodeURIComponent(medSelect.value)}`);
       const data = await lotRes.json();
 
-      if (!data.lots || data.lots.length === 0) {
-        console.warn("ไม่พบ LOT:", medSelect.value);
+      const lots = data.lots || data.items || data.data || [];
+      if (!lots || lots.length === 0) {
+        console.warn("ไม่พบ LOT ของรายการอื่นๆ:", medSelect.value);
         return;
       }
 
-      data.lots.forEach(lot => {
+      lots.forEach(lot => {
         const opt = document.createElement('option');
         opt.value = lot.id;
         opt.textContent = `${lot.name} (คงเหลือ ${lot.remain})`;
-        opt.dataset.price = lot.price || 0;
+        opt.dataset.lotName = lot.name;          // ✅ เก็บชื่อ lot จริง
+        opt.dataset.price   = lot.price || 0;    // ราคาต่อหน่วย
         lotSelect.appendChild(opt);
       });
-    });
-
-    /* ===============================
-       ADD ITEM
-    ================================ */
-    function addMedicine() {
-      const itemType = getItemType();
-
-      const itemName = medSelect.style.display !== "none"
-        ? medSelect.value
-        : medOther.value.trim();
-
-      if (!itemName || !lotSelect.value || !qtyInput.value) {
-        alert("กรุณากรอกข้อมูลให้ครบ");
-        return;
-      }
-
-      const qty = parseInt(qtyInput.value, 10);
-      if (!qty || qty <= 0) {
-        alert("จำนวนต้องมากกว่า 0");
-        return;
-      }
-
-      const selected = lotSelect.options[lotSelect.selectedIndex];
-      const remainText = selected.textContent.match(/คงเหลือ\s+(\d+)/);
-      const remain = remainText ? parseInt(remainText[1], 10) : null;
-
-      if (remain !== null && qty > remain) {
-        alert("จำนวนที่จ่ายมากกว่าคงเหลือใน Lot นี้");
-        return;
-      }
-
-      const uid = Date.now() + "_" + Math.random().toString(16).slice(2);
-
-      const obj = {
-        uid,
-        type: itemType,         // "other" / "medicine" / "supply"
-        name: itemName,
-        lot: selected.text,
-        lot_id: lotSelect.value,
-        qty: qty
-      };
-
-      medicines.push(obj);
-
-      const row = table.insertRow();
-      row.dataset.uid = uid;
-
-      row.insertCell(0).innerText = itemName;
-      row.insertCell(1).innerText = selected.text;
-      row.insertCell(2).innerText = qty;
-      row.insertCell(3).innerText = selected.dataset.price || "-";
-
-      row.insertCell(4).innerHTML =
-        `<button type="button" onclick="removeRow('${uid}')">❌</button>`;
-
-      resetLotAndQty();
+      return;
     }
 
-    function removeRow(uid) {
-      medicines = medicines.filter(x => x.uid !== uid);
-      const tr = table.querySelector(`tr[data-uid="${uid}"]`);
-      if (tr) tr.remove();
+    // ✅ CASE: medicine / supply → medicine_lots (ดึงด้วย name)
+    const lotRes = await fetch(`/api/medicine_lots?name=${encodeURIComponent(medSelect.value)}`);
+    const data = await lotRes.json();
+
+    const lots = data.lots || data.items || data.data || [];
+    if (!lots || lots.length === 0) {
+      console.warn("ไม่พบ LOT:", medSelect.value);
+      return;
     }
 
-    /* ===============================
-       SUBMIT
-    ================================ */
-    form.addEventListener("submit", e => {
-      if (medicines.length === 0) {
-        e.preventDefault();
-        alert("กรุณาเพิ่มยาอย่างน้อย 1 รายการ");
-        return;
-      }
-
-      medicines = medicines.map(m => ({
-        ...m,
-        type: (m.type || "").trim() || getItemType()
-      }));
-
-      document.getElementById("medicine_json").value = JSON.stringify(medicines);
+    lots.forEach(lot => {
+      const opt = document.createElement('option');
+      opt.value = lot.id;
+      opt.textContent = `${lot.name} (คงเหลือ ${lot.remain})`;
+      opt.dataset.lotName = lot.name;        // ✅ เก็บชื่อ lot จริง
+      opt.dataset.price   = lot.price || 0;  // ✅ ราคาต่อหน่วย
+      lotSelect.appendChild(opt);
     });
-  </script>
+  });
+
+  /* ===============================
+     ADD ITEM
+  ================================ */
+  function addMedicine() {
+    const itemType = getItemType();
+
+    const itemName = (medSelect.style.display !== "none")
+      ? medSelect.value
+      : medOther.value.trim();
+
+    if (!itemName || !lotSelect.value || !qtyInput.value) {
+      alert("กรุณากรอกข้อมูลให้ครบ");
+      return;
+    }
+
+    const qty = parseInt(qtyInput.value, 10);
+    if (!qty || qty <= 0) {
+      alert("จำนวนต้องมากกว่า 0");
+      return;
+    }
+
+    const selected = lotSelect.options[lotSelect.selectedIndex];
+    const lotText = selected.textContent || "";
+    const remainMatch = lotText.match(/คงเหลือ\s+(\d+)/);
+    const remain = remainMatch ? parseInt(remainMatch[1], 10) : null;
+
+    if (remain !== null && qty > remain) {
+      alert("จำนวนที่จ่ายมากกว่าคงเหลือใน Lot นี้");
+      return;
+    }
+
+    const uid = Date.now() + "_" + Math.random().toString(16).slice(2);
+
+    const lotName = selected.dataset.lotName || selected.textContent; // ✅ ใช้ชื่อ LOT จริง
+
+    const obj = {
+      uid,
+      type: itemType,          // "other" / "medicine" / "supply"
+      name: itemName,
+      lot: lotName,            // ✅ เก็บแค่ LOT-1 ไม่เอา "(คงเหลือ..)"
+      lot_id: lotSelect.value,
+      qty: qty,
+      price_per_unit: Number(selected.dataset.price || 0)
+    };
+
+    medicines.push(obj);
+
+    const row = table.insertRow();
+    row.dataset.uid = uid;
+
+    row.insertCell(0).innerText = itemName;
+    row.insertCell(1).innerText = lotName;
+    row.insertCell(2).innerText = qty;
+    row.insertCell(3).innerText = (selected.dataset.price !== undefined) ? selected.dataset.price : "-";
+    row.insertCell(4).innerHTML =
+      `<button type="button" onclick="removeRow('${uid}')">❌</button>`;
+
+    resetLotAndQty();
+  }
+
+  function removeRow(uid) {
+    medicines = medicines.filter(x => x.uid !== uid);
+    const tr = table.querySelector(`tr[data-uid="${uid}"]`);
+    if (tr) tr.remove();
+  }
+
+  /* ===============================
+     SUBMIT
+  ================================ */
+  form.addEventListener("submit", e => {
+    if (medicines.length === 0) {
+      e.preventDefault();
+      alert("กรุณาเพิ่มยาอย่างน้อย 1 รายการ");
+      return;
+    }
+
+    medicines = medicines.map(m => ({
+      ...m,
+      type: (m.type || "").trim() || getItemType()
+    }));
+
+    document.getElementById("medicine_json").value = JSON.stringify(medicines);
+  });
+
+  // ✅ ถ้าต้องการให้ตอนเปิดหน้ามาโหลดตามกลุ่มที่เลือกไว้ (กรณีมีค่า preset)
+  // loadMedicineItemsByGroup();
+</script>
+
 
   <div class="footer">
     © 2026 Safety Officer, CPF Khon Kaen Feedmill
