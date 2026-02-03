@@ -314,6 +314,35 @@
       font-size: 24px;
       font-weight: 700;
     }
+
+        /* ✅ สำคัญมาก: ให้คอลัมน์ใน flex "ย่อได้" ไม่ดันล้น */
+    .dashboard-left,
+    .dashboard-right{
+      min-width: 0;
+    }
+
+    /* ทำให้ 2 กราฟข้างกันได้จริงบน iPad */
+    .dashboard-row{
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    /* แนะนำให้กำหนด flex ใหม่ให้บาลานซ์ */
+    .dashboard-left{ 
+      flex: 1 1 0;
+    }
+
+    /* กัน canvas ล้น */
+    .chart-wrap canvas{
+      max-width: 100% !important;
+    }
+
+    /* มือถือค่อยคอลัมน์เดียว (iPad ยัง 2 คอลัมน์เหมือนรายปี) */
+    @media (max-width: 600px){
+      .dashboard-row{ flex-direction: column; }
+    }
+
   </style>
 </head>
 
