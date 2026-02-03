@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ทะเบียนการรักษา</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -244,6 +245,40 @@
       color: #555;
       margin-top: 60px;
     }
+
+        /* กัน iOS Safari ปรับขนาดตัวอักษรเองจน layout เพี้ยน */
+    html { -webkit-text-size-adjust: 100%; }
+
+    /* ใช้ตัวแปรควบคุมขนาด radio ตามขนาดจอ */
+    :root { --radio-scale: 1.8; } /* desktop เดิม */
+    .inline { 
+      display: flex; 
+      gap: 30px; 
+      align-items: center; 
+      margin-top: 10px;
+      flex-wrap: wrap;            /* ✅ สำคัญ: กันล้นแล้ว radio/ข้อความหลุดซ้าย */
+    }
+
+    .inline input[type="radio"]{
+      transform: scale(var(--radio-scale));
+      transform-origin: left center;  /* ✅ กันปุ่มโตแล้วดันออกนอกจอ */
+      margin-right: 8px;
+      cursor: pointer;
+      accent-color: #2196f3;          /* ✅ สีสวยและคุมได้ */
+    }
+
+    /* iPad / Tablet: ลด scale ให้พอดี */
+    @media (max-width: 1024px){
+      :root{ --radio-scale: 1.25; }   /* ✅ ปุ่มติ๊กไม่บวม */
+      .inline{ gap: 18px; }
+      .inline label{ font-size: 20px; }
+    }
+
+    /* มือถือ: ลดอีกนิด */
+    @media (max-width: 600px){
+      :root{ --radio-scale: 1.15; }
+    }
+
   </style>
 </head>
 
