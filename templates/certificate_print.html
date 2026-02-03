@@ -4,56 +4,102 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Medical_Certificate</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
-
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: "Sarabun", sans-serif; font-size: 12pt; line-height: 1.78; background: white; padding: 0; }
+
+      body {
+        font-family: "Sarabun", sans-serif;
+        font-size: 12pt;
+        line-height: 1.78;
+        background: white;
+        padding: 0;
+      }
+
       @page { size: A4; margin: 3mm 5mm; }
+
       .certificate-container { width: 100%; border: 2px solid #000; padding: 11px; }
 
       .header-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12pt; }
+
       .cert-title { text-align: center; font-size: 17pt; font-weight: 700; margin: 5px 0 7px; }
 
-      .section-header { font-weight: 700; font-size: 13pt; margin: 10px 0 5px; display: inline-block; background: #000; color: #fff; padding: 1px 8px; }
+      .section-header {
+        font-weight: 700; font-size: 13pt; margin: 10px 0 5px; display: inline-block;
+        background: #000; color: #fff; padding: 1px 8px;
+      }
+
       .info-line { margin-bottom: 3px; line-height: 1.78; font-size: 12pt; }
 
       .underline { display: inline-block; padding: 0 3px; }
       .underline.has-underline { border-bottom: 1px dotted #000; min-width: 100px; }
 
       .id-boxes { display: inline-flex; gap: 3px; margin: 0 3px; align-items: center; }
-      .id-box { width: 19px; height: 24px; border: 1px solid #000; display: inline-flex; align-items: center; justify-content: center; font-size: 11pt; font-weight: 700; }
+
+      .id-box {
+        width: 19px; height: 24px; border: 1px solid #000;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 11pt; font-weight: 700;
+      }
+
       .id-separator { display: inline-block; margin: 0 1px; }
 
-      .checkbox { width: 12px; height: 12px; border: 1px solid #000; display: inline-block; margin: 0 2px; vertical-align: middle; position: relative; }
-      .checkbox.checked::before { content: "✓"; font-size: 10pt; font-weight: 700; position: absolute; left: 0; top: -3px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+      .checkbox {
+        width: 12px; height: 12px; border: 1px solid #000;
+        display: inline-block; margin: 0 2px; vertical-align: middle; position: relative;
+      }
+      .checkbox.checked::before {
+        content: "✓"; font-size: 10pt; font-weight: 700; position: absolute;
+        left: 0; top: -3px; width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+      }
 
       .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 3px 0; }
+
       .health-item { margin-bottom: 3px; font-size: 12pt; }
+
       .signature-area { text-align: right; margin-top: 4px; font-size: 12pt; }
 
       .note-section { margin-top: 5px; font-size: 10pt; line-height: 1.3; }
+
       .note-title { font-weight: 700; margin-bottom: 1px; }
+
       .long-text { text-indent: 2em; margin: 4px 0; line-height: 1.38; font-size: 11pt; }
+
       .disease-list { margin-left: 2em; line-height: 1.38; font-size: 11pt; }
       .disease-list div { margin-bottom: 2px; }
 
       @media print {
-        body { padding: 0; zoom: 0.87; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+        body {
+          padding: 0;
+          zoom: 0.87;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          color-adjust: exact;
+        }
         .no-print { display: none !important; }
         @page { size: A4 portrait; margin: 3mm 5mm; }
         .certificate-container { page-break-inside: avoid; }
-        .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+        .section-header {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          color-adjust: exact;
+        }
       }
 
       .action-buttons { text-align: center; margin: 12px 0; }
-      .btn { padding: 8px 20px; font-size: 13pt; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; margin: 0 5px; }
+      .btn {
+        padding: 8px 20px; font-size: 13pt; font-weight: 600;
+        border: none; border-radius: 5px; cursor: pointer; text-decoration: none;
+        display: inline-block; margin: 0 5px;
+      }
       .btn-print { background: #1e88e5; color: white; }
       .btn-back { background: #28a745; color: white; }
     </style>
   </head>
-
   <body>
     <div class="certificate-container">
       <div class="action-buttons no-print">
@@ -100,15 +146,29 @@
           <div class="info-line" style="text-align: center; margin: 6px 0">
             <span>หมายเลขบัตรประจำตัวประชาชน</span>
             <div class="id-boxes">
-              <div class="id-box" id="id-1">_</div><span class="id-separator">-</span>
-              <div class="id-box" id="id-2">_</div><div class="id-box" id="id-3">_</div><div class="id-box" id="id-4">_</div><div class="id-box" id="id-5">_</div><span class="id-separator">-</span>
-              <div class="id-box" id="id-6">_</div><div class="id-box" id="id-7">_</div><div class="id-box" id="id-8">_</div><div class="id-box" id="id-9">_</div><div class="id-box" id="id-10">_</div><span class="id-separator">-</span>
-              <div class="id-box" id="id-11">_</div><div class="id-box" id="id-12">_</div><span class="id-separator">-</span>
+              <div class="id-box" id="id-1">_</div>
+              <span class="id-separator">-</span>
+              <div class="id-box" id="id-2">_</div>
+              <div class="id-box" id="id-3">_</div>
+              <div class="id-box" id="id-4">_</div>
+              <div class="id-box" id="id-5">_</div>
+              <span class="id-separator">-</span>
+              <div class="id-box" id="id-6">_</div>
+              <div class="id-box" id="id-7">_</div>
+              <div class="id-box" id="id-8">_</div>
+              <div class="id-box" id="id-9">_</div>
+              <div class="id-box" id="id-10">_</div>
+              <span class="id-separator">-</span>
+              <div class="id-box" id="id-11">_</div>
+              <div class="id-box" id="id-12">_</div>
+              <span class="id-separator">-</span>
               <div class="id-box" id="id-13">_</div>
             </div>
           </div>
 
-          <div class="info-line"><span>ข้าพเจ้าขอรับใบรับรองสุขภาพ โดยมีประวัติสุขภาพดังนี้</span></div>
+          <div class="info-line">
+            <span>ข้าพเจ้าขอรับใบรับรองสุขภาพ โดยมีประวัติสุขภาพดังนี้</span>
+          </div>
 
           <div class="two-col">
             <div>
@@ -142,9 +202,10 @@
               </div>
 
               <div class="health-item">
-                <div>4. ประวัติอื่นที่สำคัญ</div>
+                <div>4. ประวัติอื่นที่</div>
                 <div style="margin-left: 12px">
-                  <span class="underline has-underline" style="min-width: 200px" id="other-history">_______</span>
+                  <span>สำคัญ </span>
+                  <span class="underline has-underline" style="min-width: 60px" id="other-history">_______</span>
                 </div>
               </div>
             </div>
@@ -153,16 +214,16 @@
           <div class="signature-area">
             <div style="margin-top: 3px">
               <span>ลงชื่อ </span>
-              <span class="underline has-underline" style="min-width: 120px" id="requester-sign">_______</span>
+              <span class="underline has-underline" style="min-width: 60px" id="requester-sign">_______</span>
               <span> วันที่ </span>
               <span class="underline has-underline" style="min-width: 20px" id="req-day">__</span>
               <span> เดือน </span>
-              <span class="underline has-underline" style="min-width: 80px" id="req-month">________</span>
+              <span class="underline has-underline" style="min-width: 50px" id="req-month">________</span>
               <span> พ.ศ. </span>
               <span class="underline has-underline" style="min-width: 35px" id="req-year">____</span>
             </div>
             <div style="font-size: 10pt; margin-top: 1px">
-              ในกรณีเด็กที่ไม่สามารถรับรองตนเองได้ ให้ผู้ปกครองลงนามรับรองแทนได้
+              ในกรณีนี้เป็นสิทธิในสาธารณสุขหลักฐาน ให้ปฏิบัติครอบครัวฉบับจริงสมบูรณ์
             </div>
           </div>
         </div>
@@ -193,8 +254,15 @@
           </div>
 
           <div class="info-line" style="margin-left: 20px">
+            <span>ใบอนุญาตประกอบ</span>
+            <span class="underline has-underline" style="min-width: 150px">_______________</span>
+            <span>สถาน</span>
+          </div>
+
+          <div class="info-line" style="margin-left: 20px">
             <span>วิชาชีพเวชกรรมเลขที่ </span>
             <span class="underline has-underline" style="min-width: 120px" id="license">____________</span>
+            <span>พยาบาลชื่อ</span>
           </div>
 
           <div class="info-line">
@@ -207,22 +275,38 @@
             <span class="underline has-underline" style="min-width: 250px" id="patient-name">_________________________</span>
           </div>
 
+          <div class="info-line">
+            <span>แล้วเห็นว่า </span>
+            <span class="underline has-underline" style="min-width: 30px">___</span>
+            <span> เดือน </span>
+            <span class="underline has-underline" style="min-width: 70px">________</span>
+            <span> พ.ศ. </span>
+            <span class="underline has-underline" style="min-width: 45px">____</span>
+            <span> มีราย</span>
+          </div>
+
+          <div class="info-line"><span>ละเอียดดังนี้</span></div>
+
           <div class="info-line" style="margin-left: 20px">
-            <span>น้ำหนัก </span>
+            <span>น้ำ </span>
             <span class="underline has-underline" style="min-width: 40px" id="weight">____</span>
-            <span> กก. ส่วนสูง </span>
+            <span> กก. ความสูง </span>
             <span class="underline has-underline" style="min-width: 40px" id="height">____</span>
-            <span> ซม. ความดัน </span>
+            <span> เซนติเมตร ความดันโลหิต </span>
             <span class="underline has-underline" style="min-width: 60px" id="bp">______</span>
-            <span> ชีพจร </span>
+            <span> มม.ปรอท ชีพจร </span>
             <span class="underline has-underline" style="min-width: 40px" id="pulse">____</span>
-            <span> ครั้ง/นาที</span>
+            <span> ครั้ง</span>
+          </div>
+
+          <div class="info-line">
+            <span>ที่ลักษณ</span>
           </div>
 
           <div class="info-line" style="margin-left: 20px">
-            <span>สภาพร่างกาย </span>
+            <span>สภาพร่างกายที่ไม่อยู่ในเกณฑ์ </span>
             <span class="checkbox" id="body-normal"></span> ปกติ
-            <span class="checkbox" id="body-abnormal"></span> ผิดปกติ
+            <span class="checkbox" id="body-abnormal"></span> ผิดปกติ (ระบุ)
           </div>
 
           <div class="long-text">
@@ -239,19 +323,20 @@
             <div>
               (4) อื่น ๆ (ถ้ามี)
               <span class="underline has-underline" style="min-width: 200px" id="other-disease">____________________</span>
+              (โรคที่ใส่ในวงเล็บนี้ใช้กรรณาพิเจตนารมณ์มายืดยาว)
             </div>
           </div>
 
           <div class="info-line">
-            <span>(2) สรุปความเห็น </span>
+            <span>(2) สรุปความเห็นและชื่อและเวชระเบียนแพทย์ </span>
             <span class="checkbox" id="work-ok"></span> สามารถทำงานในที่อับอากาศได้
-            <span class="checkbox" id="work-not-ok"></span> ไม่สามารถทำงานในที่อับอากาศได้
+            <span class="checkbox" id="work-not-ok"></span> ไม่สามารถทำงานที่อับอากาศได้
           </div>
 
           <div class="signature-area" style="margin-top: 8px">
             <div>
               <span>ลงชื่อ </span>
-              <span class="underline has-underline" style="min-width: 160px" id="doctor-sign">__________________</span>
+              <span class="underline has-underline" style="min-width: 100px" id="doctor-sign">__________________</span>
             </div>
             <div style="margin-top: 1px">แพทย์ผู้ตรวจร่างกาย</div>
           </div>
@@ -259,22 +344,35 @@
           <div class="note-section">
             <div class="note-title">หมายเหตุ</div>
             <div>(1) ต้องเป็นแพทย์ซึ่งได้รับขึ้นทะเบียนรับใบอนุญาตประกอบวิชาชีพเวชกรรม</div>
-            <div>(2) ใบรับรองแพทย์ฉบับนี้ให้ใช้ได้ 1 เดือนนับแต่วันที่ตรวจร่างกาย</div>
+            <div>
+              (2) ให้แสดงว่าเป็นผู้มีร่างกายสมบูรณ์เพียงใด ใบรับรองแพทย์ฉบับนี้ให้ใช้ได้ 1 เดือนนับแต่วันที่ตรวจร่างกาย
+              + เลขนัดครั้งต่อไป 4/2561 วันที่ 19 เมษายน 2561
+            </div>
             <div>(3) คำรับรองนี้เป็นการตรวจวินิจฉัยเบื้องต้น</div>
+            <div>
+              แบบฟอร์มนี้ได้รับการรับรองจากมติคณะกรรมการแพทยสภาในการประชุมครั้งที่ 4/2561 วันที่ 19 เมษายน 2561
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <script>
-      // ✅ ถ้ามี record จาก server ให้ใช้เลย ไม่งั้นเป็น null
-      const SERVER_RECORD = {{ record|default(none, true)|tojson|safe }};
+      // ✅ ปลอดภัย: ถ้า record ไม่ถูกส่งมาจาก server ให้เป็น null
+      const SERVER_RECORD = {{ record|default(none)|tojson|safe }};
 
       function convertToBuddhistYear(dateString) {
         if (!dateString) return { day: "", month: "", year: "" };
         const date = new Date(dateString);
-        const months = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-        return { day: String(date.getDate()), month: months[date.getMonth()], year: String(date.getFullYear() + 543) };
+        const months = [
+          "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+          "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
+        ];
+        return {
+          day: date.getDate().toString(),
+          month: months[date.getMonth()],
+          year: (date.getFullYear() + 543).toString(),
+        };
       }
 
       function fillCitizenId(citizenId) {
@@ -289,6 +387,7 @@
         const box = document.getElementById(id);
         if (box) box.classList.add("checked");
       }
+
       function clearAllCheckboxes() {
         document.querySelectorAll(".checkbox").forEach(el => el.classList.remove("checked"));
       }
@@ -300,17 +399,17 @@
         const v = (value ?? "").toString().trim();
         if (v && !v.match(/^_+$/)) {
           el.textContent = v;
-          el.classList.remove("has-underline");
+          if (el.classList.contains("underline")) el.classList.remove("has-underline");
         } else {
           el.textContent = defaultBlank;
-          el.classList.add("has-underline");
+          if (el.classList.contains("underline")) el.classList.add("has-underline");
         }
       }
 
       function getCertIdFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        const qid = params.get("id");
-        if (qid) return qid;
+        let id = params.get("id");
+        if (id) return id;
 
         const parts = window.location.pathname.split("/").filter(Boolean);
         if (parts.length >= 3 && parts[0] === "medical_certificate" && parts[1] === "print") {
@@ -323,6 +422,7 @@
         data = data || {};
         clearAllCheckboxes();
 
+        // ✅ เลขที่ใบรับรอง (รองรับ key เก่าเผื่อมี)
         const certNo = data.certificate_no || data.cert_number || data.certNo || "";
         setFieldValue("cert-number-left", certNo, "__________");
         setFieldValue("cert-number-right", certNo, "__________");
@@ -333,18 +433,28 @@
 
         fillCitizenId(data.citizenId || data.citizen_id || data.citizenID || "");
 
-        setFieldValue("disease-detail", data.disease_detail || "", "_______");
-        setFieldValue("accident-detail", data.accident_detail || "", "_______");
-        setFieldValue("hospital-detail", data.hospital_detail || "", "_______");
+        // เคลียร์รายละเอียดก่อน กันค่าตัวอย่างค้าง
+        setFieldValue("disease-detail", "", "_______");
+        setFieldValue("accident-detail", "", "_______");
+        setFieldValue("hospital-detail", "", "_______");
 
         if (data.disease === "ไม่มี") checkBox("disease-no");
-        if (data.disease === "มี") checkBox("disease-yes");
+        else if (data.disease === "มี") {
+          checkBox("disease-yes");
+          setFieldValue("disease-detail", data.disease_detail || "", "_______");
+        }
 
         if (data.accident === "ไม่มี") checkBox("accident-no");
-        if (data.accident === "มี") checkBox("accident-yes");
+        else if (data.accident === "มี") {
+          checkBox("accident-yes");
+          setFieldValue("accident-detail", data.accident_detail || "", "_______");
+        }
 
         if (data.hospital === "ไม่มี") checkBox("hospital-no");
-        if (data.hospital === "มี") checkBox("hospital-yes");
+        else if (data.hospital === "มี") {
+          checkBox("hospital-yes");
+          setFieldValue("hospital-detail", data.hospital_detail || "", "_______");
+        }
 
         setFieldValue("other-history", data.other_history || "", "_______");
 
@@ -378,27 +488,32 @@
         setFieldValue("other-disease", data.other_disease || "", "____________________");
 
         if (data.work_result === "ได้") checkBox("work-ok");
-        if (data.work_result === "ไม่ได้") checkBox("work-not-ok");
+        else if (data.work_result === "ไม่ได้") checkBox("work-not-ok");
 
         setFieldValue("doctor-sign", data.doctor_sign || "", "__________________");
       }
 
       async function loadData() {
-        // 1) ถ้า server ส่งมาแล้ว
+        // 1) server record
         if (SERVER_RECORD && typeof SERVER_RECORD === "object") {
           populateForm(SERVER_RECORD);
           return;
         }
 
-        // 2) ถ้ามี id -> fetch
+        // 2) fetch by id
         const certId = getCertIdFromUrl();
         if (certId) {
           try {
-            const res = await fetch(`/api/medical_certificate/${encodeURIComponent(certId)}`, { credentials: "same-origin" });
+            const res = await fetch(`/api/medical_certificate/${encodeURIComponent(certId)}`, {
+              credentials: "same-origin",
+            });
             const json = await res.json();
+
             const ok = !!(json && (json.success || json.ok));
             const rec = ok ? (json.data || json.record) : null;
+
             if (rec) populateForm(rec);
+            else console.error("API response not success:", json);
           } catch (err) {
             console.error("Error loading certificate:", err);
           }
@@ -410,6 +525,8 @@
         if (tempData) {
           populateForm(JSON.parse(tempData));
           localStorage.removeItem("tempCertificateData");
+        } else {
+          console.warn("No certId found and no temp data in localStorage");
         }
       }
 
