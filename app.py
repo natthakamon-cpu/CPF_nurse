@@ -1618,13 +1618,10 @@ def medical_certificate_print_temp():
     return render_template("certificate_print.html", record=None)
 
 @app.route("/medical_certificate/print/<int:id>")
-@login_required
 def medical_certificate_print(id):
-    """Print medical certificate from database"""
     res = gas_get("medical_certificate", id)
-    if not res.get("ok") or not res.get("data"):
-        return "ไม่พบข้อมูล", 404
     return render_template("certificate_print.html", record=res["data"])
+
 
 # ============================================
 # MEDICAL CERTIFICATE API
