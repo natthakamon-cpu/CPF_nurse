@@ -77,30 +77,17 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, .25);
     }
 
-    /* แถบบนสำหรับปุ่มย้อนกลับ (ให้เหมือนกันทุกหน้า) */
-    .top-bar{
-      display:flex;
-      align-items:center;
-      justify-content:flex-start;
-      margin-bottom:20px;
+    .save-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #28a745;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 18px;
     }
-
-    /* ปุ่มย้อนกลับ/กลับเมนู */
-    .back-menu-btn{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      background:#28a745;
-      color:#fff;
-      padding:10px 18px;
-      border-radius:8px;
-      text-decoration:none;
-      font-size:18px;
-      font-weight:600;
-      box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    }
-    .back-menu-btn:hover{ background:#218838; }
-
 
     h2 {
       text-align: center;
@@ -181,12 +168,7 @@
 
     <!-- ================= LIST ================= -->
     <div id="page-list" class="box page active">
-      <div class="top-bar">
-        <a href="/medical_certificate" class="back-menu-btn">
-          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-        </a>
-      </div>
-
+      <a href="/medical_certificate" class="save-btn">⬅ เมนูหลัก</a>
       <h2>ทะเบียนใบรับรองแพทย์</h2>
 
       <input class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable(this.value)">
@@ -196,16 +178,10 @@
 
     <!-- ================= VIEW ================= -->
     <div id="page-view" class="box page">
-      <div class="top-bar">
-        <a href="javascript:void(0)" class="back-menu-btn" onclick="back()">
-          <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-        </a>
-      </div>
-
+      <a href="#" class="save-btn" onclick="back()">⬅ กลับ</a>
       <h2>ดูข้อมูลใบรับรองแพทย์</h2>
       <div id="viewBox"></div>
     </div>
-
 
     <script>
       /* ================= CONFIG ================= */
@@ -264,6 +240,7 @@
         <td>${r.requester_date || r.created_at || "-"}</td>
         <td>
           <span class="action-btn" onclick="viewRecord(${i})">👁️</span>
+          <span class="action-btn" onclick="printRecord(${recordId})">🖨️</span>
           <span class="action-btn" onclick="editRecord(${recordId})">✏️</span>
           <span class="action-btn" onclick="deleteRecord(${recordId})">🗑️</span>
         </td>
@@ -315,6 +292,12 @@
         window.location.href = `/medical_certificate/edit/${id}`;
       }
 
+      /* ================= PRINT ================= */
+      function printRecord(id) {
+        // เปิดหน้าพิมพ์พร้อม ID ในแท็บใหม่
+        window.open(`/medical_certificate/print/${id}`, '_blank');
+      }
+
       /* ================= DELETE ================= */
       async function deleteRecord(id) {
         if (confirm("ยืนยันการลบข้อมูลนี้?")) {
@@ -350,7 +333,7 @@
 
     <!-- ===== FOOTER ===== -->
     <div class="footer">
-      © 2026 Safety Officer, CPF Khon Kaen Feedmill
+      © 2025 Safety Officer, CPF Khon Kaen Feedmill
     </div>
 </body>
 

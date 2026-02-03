@@ -10,3 +10,5 @@ ENV/
 *.db
 *.sqlite3
 .DS_Store
+.vercel
+.env*.local

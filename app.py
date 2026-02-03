@@ -8,7 +8,9 @@ from urllib.parse import unquote, quote
 
 # ---------------- APP ----------------
 app = Flask(__name__)
-app.secret_key = "cpf_nurse"
+# ⚠️ Production: ใช้ Environment Variable แทน (ห้ามใช้ค่าธรรมดาใน Production)
+import os
+app.secret_key = os.environ.get('SECRET_KEY', 'cpf_nurse_development_only')
 
 # ⭐ ใส่ URL ของ Google Apps Script ที่ Deploy แล้ว
 GAS_URL = "https://script.google.com/macros/s/AKfycbx8CTkhx73DptbxSyOWe9rOzfNrfvClTJhB_1-l_jX2gPjrxWROP9wByfmxXzYhu2wS2A/exec"
@@ -1609,6 +1611,21 @@ def medical_certificate_register():
 def medical_certificate_edit_with_id(id):
     return render_template("certificate_edit.html", record_id=id)
 
+@app.route("/medical_certificate/print")
+@login_required
+def medical_certificate_print_temp():
+    """Print medical certificate from temporary data (localStorage)"""
+    return render_template("certificate_print.html", record=None)
+
+@app.route("/medical_certificate/print/<int:id>")
+@login_required
+def medical_certificate_print(id):
+    """Print medical certificate from database"""
+    res = gas_get("medical_certificate", id)
+    if not res.get("ok") or not res.get("data"):
+        return "ไม่พบข้อมูล", 404
+    return render_template("certificate_print.html", record=res["data"])
+
 # ============================================
 # MEDICAL CERTIFICATE API
 # ============================================
@@ -1706,4 +1723,6 @@ def api_medical_certificate_delete(id):
 # ============================================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # ⚠️ Production: ตั้ง debug=False หรือใช้ environment variable
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False') == 'True'
+    app.run(debug=debug_mode, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
