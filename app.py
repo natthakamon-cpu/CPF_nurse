@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 import requests
 import json
 import time
+import re
 from datetime import datetime
 from functools import wraps
 from urllib.parse import unquote, quote
@@ -69,6 +70,15 @@ def gas_list(table, limit=1000):
 
 def norm_text(s):
     return " ".join(str(s or "").strip().split())
+
+def norm_key(s: str) -> str:
+    s = str(s or "").strip().lower()
+    # unify dash
+    for ch in ["–", "—", "−"]:
+        s = s.replace(ch, "-")
+    # remove ALL whitespace (แก้เคส "HTC" มี/ไม่มีช่องว่าง)
+    s = re.sub(r"\s+", "", s)
+    return s
 
 def gas_get(table, row_id):
     """ดึงข้อมูลตาม ID"""
@@ -1053,25 +1063,28 @@ def api_medicine_list():
 def api_medicine_id():
     name = (request.args.get("name") or "").strip()
     res = gas_list("medicine", 1000)
-    
+
     if res.get("ok"):
+        target = norm_key(name)
         for m in res.get("data", []):
-            if str(m.get("name", "")).strip() == name:
+            if norm_key(m.get("name", "")) == target:
                 return jsonify({"medicine_id": m.get("id")})
-    
+
     return jsonify({"medicine_id": None})
+
 
 @app.route("/api/medicine_lots")
 def api_medicine_lots():
     medicine_id = (request.args.get("medicine_id") or "").strip()
     name = (request.args.get("name") or "").strip()
 
-    # ถ้าไม่ได้ส่ง medicine_id มา แต่ส่ง name มา → หา id ให้
+    # ถ้าไม่ได้ส่ง medicine_id มา แต่ส่ง name มา → หา id ให้แบบยืดหยุ่น
     if not medicine_id and name:
         med_res = gas_list("medicine", 5000)
         if med_res.get("ok"):
+            target = norm_key(name)
             for m in med_res.get("data", []):
-                if str(m.get("name", "")).strip() == name:
+                if norm_key(m.get("name", "")) == target:
                     medicine_id = str(m.get("id"))
                     break
 
@@ -1083,14 +1096,19 @@ def api_medicine_lots():
     if all_lots.get("ok"):
         for r in all_lots.get("data", []):
             if str(r.get("medicine_id", "")) == str(medicine_id):
-                if int(r.get("qty_remain", 0)) > 0:
+                if int(r.get("qty_remain", 0) or 0) > 0:
                     lots.append({
                         "id": r.get("id"),
                         "name": r.get("lot_name"),
                         "remain": r.get("qty_remain"),
                         "price": r.get("price_per_unit")
                     })
+
+    # (แถม) เรียง Lot ตามวันหมดอายุถ้าต้องการ
+    lots.sort(key=lambda x: str(x.get("name", "")))
+
     return jsonify({"lots": lots})
+
 
 
 @app.route("/api/cut_stock", methods=["POST"])
