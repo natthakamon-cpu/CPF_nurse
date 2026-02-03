@@ -232,21 +232,23 @@
   `;
 
         list.forEach((r, i) => {
-          const recordId = r.id;  // ใช้ ID จาก Google Sheets
+          const recordId = r.id;
+
           html += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${r.fullname || "-"}</td>
-        <td>${r.requester_date || r.created_at || "-"}</td>
-        <td>
-          <span class="action-btn" onclick="viewRecord(${i})">👁️</span>
-          <span class="action-btn" onclick="printRecord(${recordId})">🖨️</span>
-          <span class="action-btn" onclick="editRecord(${recordId})">✏️</span>
-          <span class="action-btn" onclick="deleteRecord(${recordId})">🗑️</span>
-        </td>
-      </tr>
-    `;
+            <tr>
+              <td>${i + 1}</td>
+              <td>${r.fullname || "-"}</td>
+              <td>${r.requester_date || r.created_at || "-"}</td>
+              <td>
+                <span class="action-btn" onclick="viewRecord(${i})">👁️</span>
+                <span class="action-btn" onclick="printRecord(${JSON.stringify(recordId)})">🖨️</span>
+                <span class="action-btn" onclick="editRecord(${JSON.stringify(recordId)})">✏️</span>
+                <span class="action-btn" onclick="deleteRecord(${JSON.stringify(recordId)})">🗑️</span>
+              </td>
+            </tr>
+          `;
         });
+
 
         recordTable.innerHTML = html;
       }
@@ -294,8 +296,7 @@
 
       /* ================= PRINT ================= */
       function printRecord(id) {
-        // เปิดหน้าพิมพ์พร้อม ID ในแท็บใหม่
-        window.open(`/medical_certificate/print/${id}`, '_blank');
+        window.open(`/medical_certificate/print/${encodeURIComponent(id)}`, "_blank");
       }
 
       /* ================= DELETE ================= */
