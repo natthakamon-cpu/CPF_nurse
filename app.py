@@ -1559,6 +1559,56 @@ def api_dashboard_symptom_month():
 # ============================================
 # MEDICAL CERTIFICATE
 # ============================================
+def _pick(src, *keys):
+    """ดึงค่า key แรกที่มีอยู่ (รองรับ alias) แล้ว strip"""
+    for k in keys:
+        if isinstance(src, dict):
+            v = src.get(k)
+        else:
+            v = src.get(k)  # request.form / MultiDict
+        if v is not None:
+            return str(v).strip()
+    return ""
+
+def build_medcert_payload(src):
+    return {
+        # ------- Part 1 -------
+        "title": _pick(src, "title"),
+        "fullname": _pick(src, "fullname"),
+        "address": _pick(src, "address"),
+        "citizenId": _pick(src, "citizenId", "citizen_id", "citizenID"),
+
+        "disease": _pick(src, "disease"),
+        "disease_detail": _pick(src, "disease_detail"),
+        "accident": _pick(src, "accident"),
+        "accident_detail": _pick(src, "accident_detail"),
+        "hospital": _pick(src, "hospital"),
+        "hospital_detail": _pick(src, "hospital_detail"),
+        "other_history": _pick(src, "other_history"),
+        "requester_sign": _pick(src, "requester_sign"),
+        "requester_date": _pick(src, "requester_date"),
+
+        # ------- Part 2 -------
+        "hospital_name": _pick(src, "hospital_name"),
+        "hospital_address": _pick(src, "hospital_address", "hospitalAddress"),
+
+        "weight": _pick(src, "weight"),
+        "height": _pick(src, "height"),
+        "bp": _pick(src, "bp"),
+        "pulse": _pick(src, "pulse"),
+
+        "exam_date": _pick(src, "exam_date", "examDate"),
+        "license": _pick(src, "license"),
+        "certificate_no": _pick(src, "certificate_no", "cert_number", "certNo", "certificateNo"),
+
+        "body_status": _pick(src, "body_status"),
+        "body_detail": _pick(src, "body_detail"),
+        "other_disease": _pick(src, "other_disease", "otherDisease"),
+
+        "work_result": _pick(src, "work_result"),
+        "doctor_name": _pick(src, "doctor_name"),
+        "doctor_sign": _pick(src, "doctor_sign", "doctorSign"),
+    }
 
 @app.route("/medical_certificate")
 @login_required
@@ -1569,34 +1619,12 @@ def medical_certificate_menu():
 @login_required
 def medical_certificate_form():
     if request.method == "POST":
-        payload = {
-            "title": request.form.get("title", "").strip(),
-            "fullname": request.form.get("fullname", "").strip(),
-            "address": request.form.get("address", "").strip(),
-            "disease": request.form.get("disease", "").strip(),
-            "disease_detail": request.form.get("disease_detail", "").strip(),
-            "accident": request.form.get("accident", "").strip(),
-            "accident_detail": request.form.get("accident_detail", "").strip(),
-            "hospital": request.form.get("hospital", "").strip(),
-            "hospital_detail": request.form.get("hospital_detail", "").strip(),
-            "other_history": request.form.get("other_history", "").strip(),
-            "requester_sign": request.form.get("requester_sign", "").strip(),
-            "requester_date": request.form.get("requester_date", "").strip(),
-            "hospital_name": request.form.get("hospital_name", "").strip(),
-            "weight": request.form.get("weight", "").strip(),
-            "height": request.form.get("height", "").strip(),
-            "bp": request.form.get("bp", "").strip(),
-            "pulse": request.form.get("pulse", "").strip(),
-            "body_status": request.form.get("body_status", "").strip(),
-            "body_detail": request.form.get("body_detail", "").strip(),
-            "work_result": request.form.get("work_result", "").strip(),
-            "doctor_name": request.form.get("doctor_name", "").strip()
-        }
-        
+        payload = build_medcert_payload(request.form)
         gas_append("medical_certificate", payload)
         return redirect("/medical_certificate/register")
-    
+
     return render_template("certificate_form.html")
+
 
 
 @app.route("/medical_certificate/register")
@@ -1634,37 +1662,14 @@ def medical_certificate_print(id):
 @app.route("/api/medical_certificate/add", methods=["POST"])
 @login_required
 def api_medical_certificate_add():
-    """Add new medical certificate"""
-    data = request.json
-    
-    payload = {
-        "title": data.get("title", "").strip(),
-        "fullname": data.get("fullname", "").strip(),
-        "address": data.get("address", "").strip(),
-        "disease": data.get("disease", "").strip(),
-        "disease_detail": data.get("disease_detail", "").strip(),
-        "accident": data.get("accident", "").strip(),
-        "accident_detail": data.get("accident_detail", "").strip(),
-        "hospital": data.get("hospital", "").strip(),
-        "hospital_detail": data.get("hospital_detail", "").strip(),
-        "other_history": data.get("other_history", "").strip(),
-        "requester_sign": data.get("requester_sign", "").strip(),
-        "requester_date": data.get("requester_date", "").strip(),
-        "hospital_name": data.get("hospital_name", "").strip(),
-        "weight": data.get("weight", "").strip(),
-        "height": data.get("height", "").strip(),
-        "bp": data.get("bp", "").strip(),
-        "pulse": data.get("pulse", "").strip(),
-        "body_status": data.get("body_status", "").strip(),
-        "body_detail": data.get("body_detail", "").strip(),
-        "work_result": data.get("work_result", "").strip(),
-        "doctor_name": data.get("doctor_name", "").strip()
-    }
-    
+    data = request.json or {}
+    payload = build_medcert_payload(data)
+
     res = gas_append("medical_certificate", payload)
     if res.get("ok"):
         return jsonify({"success": True, "id": res.get("id")})
     return jsonify({"success": False, "message": res.get("message", "Failed to save")})
+
 
 @app.route("/api/medical_certificate/<int:id>")
 @login_required
@@ -1678,37 +1683,14 @@ def api_medical_certificate_get(id):
 @app.route("/api/medical_certificate/edit/<int:id>", methods=["POST"])
 @login_required
 def api_medical_certificate_edit(id):
-    """Edit medical certificate"""
-    data = request.json
-    
-    payload = {
-        "title": data.get("title", "").strip(),
-        "fullname": data.get("fullname", "").strip(),
-        "address": data.get("address", "").strip(),
-        "disease": data.get("disease", "").strip(),
-        "disease_detail": data.get("disease_detail", "").strip(),
-        "accident": data.get("accident", "").strip(),
-        "accident_detail": data.get("accident_detail", "").strip(),
-        "hospital": data.get("hospital", "").strip(),
-        "hospital_detail": data.get("hospital_detail", "").strip(),
-        "other_history": data.get("other_history", "").strip(),
-        "requester_sign": data.get("requester_sign", "").strip(),
-        "requester_date": data.get("requester_date", "").strip(),
-        "hospital_name": data.get("hospital_name", "").strip(),
-        "weight": data.get("weight", "").strip(),
-        "height": data.get("height", "").strip(),
-        "bp": data.get("bp", "").strip(),
-        "pulse": data.get("pulse", "").strip(),
-        "body_status": data.get("body_status", "").strip(),
-        "body_detail": data.get("body_detail", "").strip(),
-        "work_result": data.get("work_result", "").strip(),
-        "doctor_name": data.get("doctor_name", "").strip()
-    }
-    
+    data = request.json or {}
+    payload = build_medcert_payload(data)
+
     res = gas_update("medical_certificate", id, payload)
     if res.get("ok"):
         return jsonify({"success": True})
     return jsonify({"success": False, "message": res.get("message", "Failed to update")})
+
 
 @app.route("/api/medical_certificate/delete/<int:id>", methods=["DELETE"])
 @login_required
