@@ -16,6 +16,21 @@ app.secret_key = os.environ.get('SECRET_KEY', 'cpf_nurse_development_only')
 # ⭐ ใส่ URL ของ Google Apps Script ที่ Deploy แล้ว
 GAS_URL = "https://script.google.com/macros/s/AKfycbx8CTkhx73DptbxSyOWe9rOzfNrfvClTJhB_1-l_jX2gPjrxWROP9wByfmxXzYhu2wS2A/exec"
 
+
+def _unwrap_rows(payload):
+    """
+    รองรับหลายรูปแบบที่ GAS อาจส่งกลับ:
+    - list
+    - dict ที่มี key: data / items / rows / result
+    """
+    if isinstance(payload, list):
+        return payload
+    if isinstance(payload, dict):
+        for k in ("data", "items", "rows", "result"):
+            if k in payload and isinstance(payload[k], list):
+                return payload[k]
+    return []
+
 # ============================================
 # GOOGLE SHEETS API HELPERS
 # ============================================
@@ -1072,6 +1087,45 @@ def api_medicine_id():
 
     return jsonify({"medicine_id": None})
 
+@app.get("/api/medicine_items")
+def api_medicine_items():
+    """
+    ดึงชื่อยา/เวชภัณฑ์ที่ถูกเพิ่มไว้ในชีต/ฐานข้อมูล แยกตาม group
+    รับพารามิเตอร์:
+      - group: ชื่อกลุ่ม (ภาษาไทยจาก label)
+      - code:  value ของ symptom_group (เผื่อในชีตเก็บเป็น code)
+    ส่งกลับ:
+      { "items": ["Amoxy", "test1", ...] }
+    """
+    group = (request.args.get("group") or "").strip()
+    code  = (request.args.get("code")  or "").strip()
+
+    if not group and not code:
+        return jsonify({"items": []})
+
+    # ✅ ใช้ของคุณ: gas_list(table, limit)
+    rows = _unwrap_rows(gas_list("medicine", limit=5000))
+
+    names = []
+    seen = set()
+
+    for r in rows:
+        g = (r.get("group_name") or "").strip()
+        name = (r.get("name") or "").strip()
+        if not name:
+            continue
+
+        # match ได้ทั้งชื่อกลุ่มไทย หรือ code (กันพลาดกรณีชีตเก็บไม่เหมือนกัน)
+        if (group and g == group) or (code and g == code):
+            key = name.lower()
+            if key not in seen:
+                seen.add(key)
+                names.append(name)
+
+    # เรียงชื่อให้อ่านง่าย
+    names.sort(key=lambda s: s.lower())
+
+    return jsonify({"items": names})
 
 @app.route("/api/medicine_lots")
 def api_medicine_lots():
