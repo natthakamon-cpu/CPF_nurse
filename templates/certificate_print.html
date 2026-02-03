@@ -634,27 +634,64 @@
         if (box) box.classList.add("checked");
       }
 
-      function loadData() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const certId = urlParams.get("id");
+  function getCertIdFromUrl() {
+    // 1) รองรับแบบ ?id=xxxx
+    const params = new URLSearchParams(window.location.search);
+    let id = params.get("id");
+    if (id) return id;
 
-        if (certId) {
-          fetch(`/api/medical_certificate/${certId}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.success) {
-                populateForm(data.record);
-              }
-            })
-            .catch((err) => console.error("Error:", err));
-        } else {
-          const tempData = localStorage.getItem("tempCertificateData");
-          if (tempData) {
-            populateForm(JSON.parse(tempData));
-            localStorage.removeItem("tempCertificateData");
+    // 2) รองรับแบบ /medical_certificate/print/xxxx
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    // parts = ["medical_certificate","print","177050482490"]
+    if (parts.length >= 3 && parts[0] === "medical_certificate" && parts[1] === "print") {
+      return decodeURIComponent(parts[2]);
+    }
+
+    // fallback: เอาตัวท้ายสุดของ path เผื่อกรณี route เปลี่ยน
+    return parts.length ? decodeURIComponent(parts[parts.length - 1]) : null;
+  }
+
+  function loadData() {
+    const certId = getCertIdFromUrl();
+
+    if (certId) {
+      fetch(`/api/medical_certificate/${encodeURIComponent(certId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && data.record) {
+            populateForm(data.record);
+
+            // (เลือกได้) ถ้าต้องการให้เด้ง print อัตโนมัติหลังโหลดข้อมูลจริง
+            // setTimeout(() => window.print(), 300);
+          } else {
+            console.error("API response not success:", data);
           }
-        }
+        })
+        .catch((err) => console.error("Error:", err));
+    } else {
+      const tempData = localStorage.getItem("tempCertificateData");
+      if (tempData) {
+        populateForm(JSON.parse(tempData));
+        localStorage.removeItem("tempCertificateData");
+      } else {
+        console.warn("No certId found and no temp data in localStorage");
       }
+    }
+  }
+
+  // ------- เพิ่มความทน: citizen id อาจชื่อคนละแบบจากฝั่ง API -------
+  function populateForm(data) {
+    // ... (ของเดิมคุณ)
+
+    // เปลี่ยนบรรทัดนี้:
+    // fillCitizenId(data.citizenId);
+    // เป็น:
+    fillCitizenId(data.citizenId || data.citizen_id || data.citizenID);
+
+    // ... (ของเดิมคุณต่อ)
+  }
+
+  window.addEventListener("DOMContentLoaded", loadData);
 
       function setFieldValue(id, value, defaultBlank = "") {
         const el = document.getElementById(id);
