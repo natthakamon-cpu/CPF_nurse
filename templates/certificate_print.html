@@ -596,22 +596,16 @@
     </div>
 
     <script>
+      // ✅ ถ้าเข้าหน้านี้ผ่าน /medical_certificate/print/<id>
+      // ฝั่ง Flask ส่ง record มาให้แล้ว -> ไม่ต้อง fetch
+      const SERVER_RECORD = {{ record | tojson | safe }};
+
       function convertToBuddhistYear(dateString) {
         if (!dateString) return { day: "", month: "", year: "" };
         const date = new Date(dateString);
         const months = [
-          "มกราคม",
-          "กุมภาพันธ์",
-          "มีนาคม",
-          "เมษายน",
-          "พฤษภาคม",
-          "มิถุนายน",
-          "กรกฎาคม",
-          "สิงหาคม",
-          "กันยายน",
-          "ตุลาคม",
-          "พฤศจิกายน",
-          "ธันวาคม",
+          "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+          "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
         ];
         return {
           day: date.getDate().toString(),
@@ -620,10 +614,10 @@
         };
       }
 
+      // ✅ ปรับให้ “ล้างค่าเดิม” เสมอ (กันเลขตัวอย่างค้าง)
       function fillCitizenId(citizenId) {
-        if (!citizenId) return;
-        const digits = citizenId.replace(/[^0-9]/g, "").split("");
-        for (let i = 1; i <= 13 && i <= digits.length; i++) {
+        const digits = String(citizenId || "").replace(/\D/g, "");
+        for (let i = 1; i <= 13; i++) {
           const box = document.getElementById(`id-${i}`);
           if (box) box.textContent = digits[i - 1] || "_";
         }
@@ -634,147 +628,145 @@
         if (box) box.classList.add("checked");
       }
 
-  function getCertIdFromUrl() {
-    // 1) รองรับแบบ ?id=xxxx
-    const params = new URLSearchParams(window.location.search);
-    let id = params.get("id");
-    if (id) return id;
-
-    // 2) รองรับแบบ /medical_certificate/print/xxxx
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    // parts = ["medical_certificate","print","177050482490"]
-    if (parts.length >= 3 && parts[0] === "medical_certificate" && parts[1] === "print") {
-      return decodeURIComponent(parts[2]);
-    }
-
-    // fallback: เอาตัวท้ายสุดของ path เผื่อกรณี route เปลี่ยน
-    return parts.length ? decodeURIComponent(parts[parts.length - 1]) : null;
-  }
-
-  function loadData() {
-    const certId = getCertIdFromUrl();
-
-    if (certId) {
-      fetch(`/api/medical_certificate/${encodeURIComponent(certId)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.success && data.record) {
-            populateForm(data.record);
-
-            // (เลือกได้) ถ้าต้องการให้เด้ง print อัตโนมัติหลังโหลดข้อมูลจริง
-            // setTimeout(() => window.print(), 300);
-          } else {
-            console.error("API response not success:", data);
-          }
-        })
-        .catch((err) => console.error("Error:", err));
-    } else {
-      const tempData = localStorage.getItem("tempCertificateData");
-      if (tempData) {
-        populateForm(JSON.parse(tempData));
-        localStorage.removeItem("tempCertificateData");
-      } else {
-        console.warn("No certId found and no temp data in localStorage");
-      }
-    }
-  }
-
-  // ------- เพิ่มความทน: citizen id อาจชื่อคนละแบบจากฝั่ง API -------
-  function populateForm(data) {
-    // ... (ของเดิมคุณ)
-
-    // เปลี่ยนบรรทัดนี้:
-    // fillCitizenId(data.citizenId);
-    // เป็น:
-    fillCitizenId(data.citizenId || data.citizen_id || data.citizenID);
-
-    // ... (ของเดิมคุณต่อ)
-  }
-
-  window.addEventListener("DOMContentLoaded", loadData);
-
       function setFieldValue(id, value, defaultBlank = "") {
         const el = document.getElementById(id);
         if (!el) return;
 
-        // ถ้ามีค่าและไม่ใช่ค่าเริ่มต้นที่เป็น underscores
-        if (value && !value.match(/^_+$/)) {
-          el.textContent = value;
-          if (el.classList.contains("underline")) {
-            el.classList.remove("has-underline");
-          }
+        const v = (value ?? "").toString().trim();
+
+        if (v && !v.match(/^_+$/)) {
+          el.textContent = v;
+          if (el.classList.contains("underline")) el.classList.remove("has-underline");
         } else {
           el.textContent = defaultBlank;
-          if (el.classList.contains("underline")) {
-            el.classList.add("has-underline");
-          }
+          if (el.classList.contains("underline")) el.classList.add("has-underline");
         }
       }
 
+      function getCertIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        let id = params.get("id");
+        if (id) return id;
+
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        // ["medical_certificate","print","177004..."]
+        if (parts.length >= 3 && parts[0] === "medical_certificate" && parts[1] === "print") {
+          return decodeURIComponent(parts[2]);
+        }
+        return parts.length ? decodeURIComponent(parts[parts.length - 1]) : null;
+      }
+
       function populateForm(data) {
-        setFieldValue("cert-number-left", data.cert_number);
-        setFieldValue("cert-number-right", data.cert_number);
-        setFieldValue("fullname", data.fullname);
-        setFieldValue("address", data.address);
-        setFieldValue("contact-address", data.address);
+        data = data || {};
 
-        fillCitizenId(data.citizenId);
+        // (บางฟิลด์คุณยังไม่ได้เก็บใน backend เช่น cert_number, exam_date, license ฯลฯ
+        //  ถ้าไม่มี ก็จะว่าง/เป็นเส้นแทน)
+        setFieldValue("cert-number-left", data.cert_number || "");
+        setFieldValue("cert-number-right", data.cert_number || "");
 
+        setFieldValue("fullname", data.fullname || "");
+        setFieldValue("address", data.address || "");
+        setFieldValue("contact-address", data.address || "");
+
+        // ✅ รองรับหลายชื่อ key และล้างเสมอ
+        fillCitizenId(data.citizenId || data.citizen_id || data.citizenID || "");
+
+        // checkbox disease/accident/hospital
         if (data.disease === "ไม่มี") checkBox("disease-no");
         else if (data.disease === "มี") {
           checkBox("disease-yes");
-          setFieldValue("disease-detail", data.disease_detail);
+          setFieldValue("disease-detail", data.disease_detail || "");
         }
 
         if (data.accident === "ไม่มี") checkBox("accident-no");
         else if (data.accident === "มี") {
           checkBox("accident-yes");
-          setFieldValue("accident-detail", data.accident_detail);
+          setFieldValue("accident-detail", data.accident_detail || "");
         }
 
         if (data.hospital === "ไม่มี") checkBox("hospital-no");
         else if (data.hospital === "มี") {
           checkBox("hospital-yes");
-          setFieldValue("hospital-detail", data.hospital_detail);
+          setFieldValue("hospital-detail", data.hospital_detail || "");
         }
 
-        setFieldValue("other-history", data.other_history);
+        setFieldValue("other-history", data.other_history || "");
 
         const reqDate = convertToBuddhistYear(data.requester_date);
         setFieldValue("req-day", reqDate.day);
         setFieldValue("req-month", reqDate.month);
         setFieldValue("req-year", reqDate.year);
-        setFieldValue("requester-sign", data.requester_sign);
+        setFieldValue("requester-sign", data.requester_sign || "");
 
-        setFieldValue("hospital-name", data.hospital_name);
+        setFieldValue("hospital-name", data.hospital_name || "");
 
         const examDate = convertToBuddhistYear(data.exam_date);
         setFieldValue("exam-day", examDate.day);
         setFieldValue("exam-month", examDate.month);
         setFieldValue("exam-year", examDate.year);
 
-        setFieldValue("doctor-name", data.doctor_name);
-        setFieldValue("license", data.license);
-        setFieldValue("hospital-address", data.hospital_address);
-        setFieldValue("patient-name", data.fullname);
+        setFieldValue("doctor-name", data.doctor_name || "");
+        setFieldValue("license", data.license || "");
+        setFieldValue("hospital-address", data.hospital_address || "");
+        setFieldValue("patient-name", data.fullname || "");
 
-        setFieldValue("weight", data.weight);
-        setFieldValue("height", data.height);
-        setFieldValue("bp", data.bp);
-        setFieldValue("pulse", data.pulse);
+        setFieldValue("weight", data.weight || "");
+        setFieldValue("height", data.height || "");
+        setFieldValue("bp", data.bp || "");
+        setFieldValue("pulse", data.pulse || "");
 
         if (data.body_status === "ปกติ") checkBox("body-normal");
         else if (data.body_status === "ผิดปกติ") checkBox("body-abnormal");
 
-        setFieldValue("other-disease", data.other_disease);
+        setFieldValue("other-disease", data.other_disease || "");
 
         if (data.work_result === "ได้") checkBox("work-ok");
         else if (data.work_result === "ไม่ได้") checkBox("work-not-ok");
 
-        setFieldValue("doctor-sign", data.doctor_sign);
+        setFieldValue("doctor-sign", data.doctor_sign || "");
       }
 
-      window.addEventListener("DOMContentLoaded", loadData);
+      async function loadData() {
+        // ✅ 1) ถ้ามี record จาก server ให้ใช้เลย (ดีที่สุด)
+        if (SERVER_RECORD && typeof SERVER_RECORD === "object") {
+          populateForm(SERVER_RECORD);
+          return;
+        }
+
+        // ✅ 2) ถ้าไม่มี record ให้ไปดึงจาก API ตาม id ใน URL
+        const certId = getCertIdFromUrl();
+
+        if (certId) {
+          try {
+            const res = await fetch(`/api/medical_certificate/${encodeURIComponent(certId)}`, {
+              credentials: "same-origin",
+            });
+            const json = await res.json();
+
+            // ✅ รองรับทั้ง json.data และ json.record
+            const rec = (json && json.success) ? (json.data || json.record) : null;
+
+            if (rec) populateForm(rec);
+            else console.error("API response not success:", json);
+
+          } catch (err) {
+            console.error("Error loading certificate:", err);
+          }
+          return;
+        }
+
+        // ✅ 3) fallback: localStorage (โหมดพิมพ์จาก temp)
+        const tempData = localStorage.getItem("tempCertificateData");
+        if (tempData) {
+          populateForm(JSON.parse(tempData));
+          localStorage.removeItem("tempCertificateData");
+        } else {
+          console.warn("No certId found and no temp data in localStorage");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadData);
     </script>
+
   </body>
 </html>
