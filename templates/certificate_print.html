@@ -51,6 +51,50 @@
       .btn { padding: 8px 20px; font-size: 13pt; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; margin: 0 5px; }
       .btn-print { background: #1e88e5; color: white; }
       .btn-back { background: #28a745; color: white; }
+
+      /* ✅ ทำบรรทัดให้ “label + ช่องกรอก” อยู่บรรทัดเดียวกันและยืดได้ */
+      .line-flex{
+        display:flex;
+        flex-wrap:wrap;
+        align-items:baseline;
+        gap:6px;
+      }
+      .line-flex .label{
+        white-space:nowrap;
+      }
+      .line-flex .field{
+        flex:1 1 auto;
+        min-width:260px;   /* ปรับได้ตามต้องการ */
+      }
+
+      /* ✅ ระยะเยื้องซ้ายแบบเดียวกับบรรทัดที่คุณใช้ margin-left:20px */
+      .indent-20{ margin-left:20px; }
+
+      /* ✅ เลขบัตรประชาชนให้ชิดซ้ายเหมือนบรรทัดอื่น */
+      .citizen-line{
+        margin:6px 0;
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        gap:8px;
+      }
+      .citizen-line .id-boxes{ margin:0; } /* ตัด margin เดิมที่ทำให้ดูไม่เสมอ */
+
+      /* ✅ ย่อหน้า “ขอรับรองว่า...” ให้ขอบซ้ายเสมอ (ไม่ indent แปลก) */
+      .long-text{
+        margin:4px 0 4px 20px; /* ชิดซ้ายเท่ากับกลุ่มที่ indent 20 */
+        text-indent:0;         /* เอาการย่อหน้าแบบ 2em ออก */
+        line-height:1.38;
+        font-size:11pt;
+      }
+
+      /* ✅ รายการโรคให้ไล่ระดับจาก long-text แบบเนียน ๆ */
+      .disease-list{
+        margin-left:20px;
+        padding-left:2em;
+        line-height:1.38;
+        font-size:11pt;
+      }
     </style>
   </head>
 
@@ -87,18 +131,19 @@
             <span class="underline has-underline" style="min-width: 250px; font-weight: 700" id="fullname">________</span>
           </div>
 
-          <div class="info-line">
-            <span>ที่อยู่ </span>
-            <span class="underline has-underline" style="min-width: 520px" id="address">________</span>
+          <div class="info-line line-flex">
+            <span class="label">ที่อยู่</span>
+            <span class="underline has-underline field" id="address">________</span>
           </div>
 
-          <div class="info-line">
-            <span>สถานที่อยู่ (ที่สามารถติดต่อได้) </span>
-            <span class="underline has-underline" style="min-width: 400px" id="contact-address">________</span>
+          <div class="info-line line-flex">
+            <span class="label">สถานที่อยู่ (ที่สามารถติดต่อได้)</span>
+            <span class="underline has-underline field" id="contact-address">________</span>
           </div>
 
-          <div class="info-line" style="text-align: center; margin: 6px 0">
-            <span>หมายเลขบัตรประจำตัวประชาชน</span>
+
+          <div class="info-line citizen-line">
+            <span class="label">หมายเลขบัตรประจำตัวประชาชน</span>
             <div class="id-boxes">
               <div class="id-box" id="id-1">_</div><span class="id-separator">-</span>
               <div class="id-box" id="id-2">_</div><div class="id-box" id="id-3">_</div><div class="id-box" id="id-4">_</div><div class="id-box" id="id-5">_</div><span class="id-separator">-</span>
@@ -108,7 +153,9 @@
             </div>
           </div>
 
-          <div class="info-line"><span>ข้าพเจ้าขอรับใบรับรองสุขภาพ โดยมีประวัติสุขภาพดังนี้</span></div>
+          <div class="info-line indent-20">
+            <span>ข้าพเจ้าขอรับใบรับรองสุขภาพ โดยมีประวัติสุขภาพดังนี้</span>
+          </div>
 
           <div class="two-col">
             <div>
@@ -197,9 +244,9 @@
             <span class="underline has-underline" style="min-width: 120px" id="license">____________</span>
           </div>
 
-          <div class="info-line">
-            <span>ที่อยู่ </span>
-            <span class="underline has-underline" style="min-width: 500px" id="hospital-address">__________________________________________________</span>
+          <div class="info-line line-flex indent-20">
+            <span class="label">ที่อยู่</span>
+            <span class="underline has-underline field" id="hospital-address">__________________________________________________</span>
           </div>
 
           <div class="info-line" style="margin-left: 20px">
