@@ -4,83 +4,448 @@
     <meta charset="UTF-8" />
     <title>ใบรับรองแพทย์</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
     <style>
-      * { box-sizing: border-box; }
-      .header { font-size: 16px; }
-      body { font-family: "Sarabun", sans-serif; background: #f4f6f8; margin: 0; }
-      .container { font-size: 24px; }
+      * {
+        box-sizing: border-box;
+      }
 
+      .header {
+        font-size: 16px;
+      }
+
+      body {
+        font-family: "Sarabun", sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+      }
+
+      .container {
+        font-size: 24px;
+      }
+
+      /* ================= HEADER ================= */
       .header {
         width: 100%;
         background: #ffffff;
         border-bottom: 1px solid #e0e0e0;
         padding: 14px 40px;
-        display: flex; align-items: center; justify-content: space-between;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
-      .header-left { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #5b2c83; }
-      .header-left i { font-size: 26px; }
-      .header-right { display: flex; align-items: center; gap: 16px; font-size: 14px; }
-      .logout-btn { background: #ff6b6b; color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
-      .label-bold { font-weight: 700; }
 
-      .q-row, .doctor-row, .line-group { margin-bottom: 22px; }
-      label { display: block; margin-bottom: 10px; }
-      input, textarea, select { margin-top: 6px; }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #5b2c83;
+      }
 
-      .option-row input[type="radio"] { transform: scale(1.6); margin-right: 6px; }
-      .option-row label { font-size: 22px; }
+      .header-left i {
+        font-size: 26px;
+      }
 
-      .paper { position: relative; max-width: 1500px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.25); }
-      h2 { text-align: center; margin-top: 10px; margin-bottom: 30px; font-size: 32px; font-weight: 700; }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 14px;
+      }
+
+      .logout-btn {
+        background: #ff6b6b;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .label-bold {
+        font-weight: 700;
+      }
+
+      /* ===== ระยะห่าง label กับ input ===== */
+      .q-row,
+      .doctor-row,
+      .line-group {
+        margin-bottom: 22px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      /* ช่องกรอกอ่านง่ายขึ้น */
+      input,
+      textarea,
+      select {
+        margin-top: 6px;
+      }
+
+      /* ===== ขยาย radio button ===== */
+      .option-row input[type="radio"] {
+        transform: scale(1.6);
+        margin-right: 6px;
+      }
+
+      .option-row label {
+        font-size: 22px;
+      }
 
       .paper > a.save-btn {
-        position: absolute; top: 15px; left: 15px;
-        background: #28a745; color: #fff; padding: 10px 18px; border-radius: 8px;
-        font-size: 18px; font-weight: 600; text-decoration: none;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        text-decoration: none;
       }
-      .paper > a.save-btn:hover { background: #218838; }
 
-      .tab { text-align: center; margin-bottom: 25px; }
+      .paper > a.save-btn:hover {
+        text-decoration: none;
+      }
+
+      /* ================= BASE ================= */
+      body {
+        font-family: "Sarabun", sans-serif;
+        font-size: 24px;
+        background: #f4f6f8;
+        margin: 0;
+      }
+
+      /* ================= กรอบหลัก ================= */
+      .paper {
+        position: relative;
+        max-width: 1500px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 40px;
+        border-radius: 14px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        box-sizing: border-box;
+      }
+
+      /* ================= หัวข้อ ================= */
+      h2 {
+        text-align: center;
+        margin-top: 10px;
+        margin-bottom: 30px;
+        font-size: 32px;
+        font-weight: 700;
+      }
+
+      /* ================= ปุ่มกลับเมนู ================= */
+      .paper > a.save-btn {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: #28a745;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .paper > a.save-btn:hover {
+        background: #218838;
+      }
+
+      /* ================= แถบสลับส่วน ================= */
+      .tab {
+        text-align: center;
+        margin-bottom: 25px;
+      }
+
       .tab button {
-        padding: 18px 32px; margin: 0 10px; font-size: 24px; font-weight: 600;
-        border: none; border-radius: 14px; cursor: pointer; color: #fff;
+        padding: 18px 32px;
+        margin: 0 10px;
+        font-size: 24px;
+        font-weight: 600;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        color: #fff;
         background: linear-gradient(135deg, #1e88e5, #90caf9);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
       }
-      .tab button:hover { transform: translateY(-3px); }
 
-      .section-title, b { font-size: 24px; font-weight: 700; margin-top: 14px; }
-      .form-title { font-size: 32px; font-weight: 700; text-align: center; }
+      .tab button:hover {
+        transform: translateY(-3px);
+      }
 
-      input, textarea, select { width: 100%; padding: 14px; font-size: 24px; border-radius: 14px; border: 1px solid #bbb; }
-      .save-btn, .print-btn {
-        margin-top: 24px; padding: 18px 32px; font-size: 24px; font-weight: 600;
-        border: none; border-radius: 14px; cursor: pointer; color: #fff;
+      /* ================= หัวข้อย่อย ================= */
+      .section-title,
+      b {
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 14px;
+      }
+
+      .form-title {
+        font-size: 32px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      /* ================= ช่องกรอก ================= */
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 14px;
+        font-size: 24px;
+        border-radius: 14px;
+        border: 1px solid #bbb;
+        box-sizing: border-box;
+      }
+
+      /* ================= ปุ่มบันทึก / พิมพ์ ================= */
+      .save-btn,
+      .print-btn {
+        margin-top: 24px;
+        padding: 18px 32px;
+        font-size: 24px;
+        font-weight: 600;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        color: #fff;
         background: linear-gradient(135deg, #1e88e5, #90caf9);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
       }
-      .print-btn { margin-left: 10px; }
 
-      .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-      .doctor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
-      .doctor-col { min-width: 0; }
-      .option-row { display: flex; align-items: center; gap: 10px; }
+      .print-btn {
+        margin-left: 10px;
+      }
 
-      .hide { display: none; }
+      /* ================= GRID ================= */
+      .health-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
 
-      .footer { width: 100%; background: #dcdcdc; text-align: center; padding: 18px; font-size: 14px; color: #555; margin-top: 60px; }
+      /* ✅ เพิ่มให้ครบ (เดิมคุณใช้แต่ยังไม่มี style) */
+      .doctor-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 10px;
+      }
+      .doctor-col {
+        min-width: 0;
+      }
+
+      .option-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* ================= HIDE ================= */
+      .hide {
+        display: none;
+      }
+
+      /* ================= PRINT ================= */
+      @media print {
+        #part2 .form-title {
+          margin-top: 12px !important;
+        }
+
+        .form-title,
+        .section-title,
+        b,
+        strong {
+          font-size: 18px !important;
+          font-weight: 700 !important;
+          margin: 6px 0 4px;
+        }
+
+        .option-row {
+          margin-top: 4px !important;
+          gap: 14px !important;
+        }
+
+        .option-row label {
+          margin-right: 10px !important;
+        }
+
+        .note div {
+          font-size: 16px !important;
+          line-height: 1.25 !important;
+        }
+
+        .q-row,
+        .doctor-row,
+        .line-group {
+          margin-bottom: 6px !important;
+        }
+
+        label {
+          margin-bottom: 2px !important;
+        }
+
+        input,
+        textarea,
+        select {
+          margin-top: 0 !important;
+          padding: 0 !important;
+        }
+
+        p {
+          margin: 4px 0 !important;
+        }
+
+        div {
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+        }
+
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: "Sarabun", sans-serif !important;
+          font-size: 16px;
+          line-height: 1.25;
+          color: #000;
+          zoom: 0.85;
+        }
+
+        button,
+        .tab,
+        .save-btn,
+        .print-btn,
+        a {
+          display: none !important;
+        }
+
+        .paper,
+        form {
+          max-width: 100% !important;
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        h2 {
+          font-size: 18px !important;
+          font-weight: 700;
+          text-align: center;
+          margin: 0 0 8px 0;
+        }
+
+        div,
+        p,
+        label,
+        span {
+          font-size: 16px !important;
+          font-weight: 400 !important;
+          margin: 0;
+          padding: 0;
+        }
+
+        input,
+        textarea,
+        select {
+          font-family: "Sarabun", sans-serif !important;
+          font-size: 16px !important;
+          border: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          outline: none !important;
+        }
+
+        textarea {
+          resize: none;
+        }
+
+        .health-grid,
+        .doctor-grid {
+          gap: 10px !important;
+        }
+
+        #part1,
+        #part2,
+        .note {
+          display: block !important;
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+      }
+
+      @media print {
+        .header,
+        .header * {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        .footer {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        body {
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+        }
+
+        @page {
+          size: A4;
+          margin: 15mm;
+          @bottom-left {
+            content: none;
+          }
+          @bottom-right {
+            content: none;
+          }
+          @top-left {
+            content: none;
+          }
+          @top-right {
+            content: none;
+          }
+        }
+      }
+
+      .footer {
+        width: 100%;
+        background: #dcdcdc;
+        text-align: center;
+        padding: 18px;
+        font-size: 14px;
+        color: #555;
+        margin-top: 60px;
+      }
     </style>
   </head>
 
   <body>
+    <!-- ===== HEADER ===== -->
     <div class="header">
       <div class="header-left">
         <i class="fa-solid fa-stethoscope"></i>
         ห้องพยาบาล CPF ขอนแก่น
       </div>
+
       <div class="header-right">
         {{ session.get('user_name', 'User') }} ({{ session.get('role', 'user') }}) | หน่วยงาน Safety
         <a href="/logout" class="logout-btn">ออก</a>
@@ -101,8 +466,9 @@
         <!-- ========= PART 1 ========= -->
         <form id="part1">
           <div class="form-title">ส่วนที่ 1 ผู้ขอรับใบรับรอง</div>
+          <div class="line"></div>
 
-          <div class="q-row">
+          <div class="q-row hide-print">
             <label class="label-bold">คำนำหน้า</label>
             <select name="title">
               <option>นาย</option>
@@ -183,6 +549,7 @@
           <div class="form-title">ส่วนที่ 2 ของแพทย์</div>
 
           <div class="doctor-grid">
+            <!-- ===== คอลัมน์ซ้าย ===== -->
             <div class="doctor-col">
               <div class="doctor-row">
                 <label class="section-title">ชื่อแพทย์</label>
@@ -201,19 +568,20 @@
 
               <div class="doctor-row">
                 <label class="section-title">ผลการตรวจร่างกาย</label>
-                <div style="display:flex; gap:10px; flex-wrap:wrap">
-                  <input name="weight" type="text" placeholder="น้ำหนัก (กก.)" style="width:120px" />
-                  <input name="height" type="text" placeholder="ส่วนสูง (ซม.)" style="width:120px" />
-                  <input name="bp" type="text" placeholder="ความดัน (mmHg)" style="width:140px" />
-                  <input name="pulse" type="text" placeholder="ชีพจร (ครั้ง/นาที)" style="width:140px" />
+                <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                  <input name="weight" type="text" placeholder="น้ำหนัก (กก.)" style="width: 120px" />
+                  <input name="height" type="text" placeholder="ส่วนสูง (ซม.)" style="width: 120px" />
+                  <input name="bp" type="text" placeholder="ความดัน (mmHg)" style="width: 140px" />
+                  <input name="pulse" type="text" placeholder="ชีพจร (ครั้ง/นาที)" style="width: 140px" />
                 </div>
               </div>
             </div>
 
+            <!-- ===== คอลัมน์ขวา ===== -->
             <div class="doctor-col">
               <div class="doctor-row">
                 <label class="section-title">เลขที่ใบรับรอง</label>
-                <input name="certificate_no" placeholder="เช่น MC-20260203-12345" />
+                <input name="certificate_no" placeholder="เช่น CPF-MC-2569-0001" />
               </div>
 
               <div class="doctor-row">
@@ -233,31 +601,34 @@
             </div>
           </div>
 
-          <p style="text-indent:2em; line-height:1.4">
-            ขอรับรองว่า บุคคลดังกล่าว ไม่เป็นผู้มีร่างกายทุพพลภาพจนไม่สามารถปฏิบัติหน้าที่ได้
+          <p style="text-indent: 2em; line-height: 1.4">
+            ขอรับรองว่า บุคคลดังกล่าว
+            ไม่เป็นผู้มีร่างกายทุพพลภาพจนไม่สามารถปฏิบัติหน้าที่ได้
             ไม่ปรากฏอาการของโรคจิต หรือจิตฟั่นเฟือน หรือปัญญาอ่อน
             ไม่ปรากฏอาการของการติดยาเสพติดให้โทษ และอาการของโรคพิษสุราเรื้อรัง
             และไม่ปรากฏอาการและอาการแสดงของโรคต่อไปนี้
           </p>
+          <div class="section-title">และไม่ปรากฏอาการและอาการแสดงของโรคต่อไปนี้</div>
 
           <div>(1) โรคเรื้อนในระยะติดต่อ หรือในระยะที่ปรากฏอาการเป็นที่รังเกียจแก่สังคม</div>
           <div>(2) วัณโรคในระยะอันตราย</div>
           <div>(3) โรคเท้าช้างในระยะที่ปรากฏอาการเป็นที่รังเกียจแก่สังคม</div>
           <div>
             (4) อื่น ๆ (ถ้ามี)
-            <input name="other_disease" type="text" style="width:70%" placeholder="ระบุโรคอื่น ๆ" />
+            <input name="other_disease" type="text" style="width: 70%" placeholder="ระบุโรคอื่น ๆ" />
           </div>
+          <br />
 
-          <div style="margin-top:20px">
-            <div style="margin-bottom:12px">
+          <div style="margin-top: 20px">
+            <div style="margin-bottom: 12px">
               <label class="section-title">สรุปความเห็น / ผลการทำงานในที่อับอากาศ</label>
-              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px">
                 <label><input type="radio" name="work_result" value="ได้" /> สามารถทำงานได้</label>
                 <label><input type="radio" name="work_result" value="ไม่ได้" /> ไม่สามารถทำงานได้</label>
               </div>
             </div>
 
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom: 12px">
               <label class="section-title">ความเห็นเพิ่มเติม</label>
               <textarea name="body_detail" rows="3" placeholder="ระบุความเห็นเพิ่มเติม (ถ้ามี)"></textarea>
             </div>
@@ -268,17 +639,40 @@
             </div>
           </div>
 
+          <div class="note">
+            <div class="section-title">หมายเหตุ</div>
+            <div>(1) ต้องเป็นแพทย์ซึ่งได้ขึ้นทะเบียนรับใบอนุญาตประกอบวิชาชีพเวชกรรม</div>
+            <div>
+              (2) ให้แสดงว่าเป็นผู้มีร่างกายสมบูรณ์เพียงใด
+              ใบรับรองแพทย์ฉบับนี้ให้ใช้ได้ 1 เดือนนับแต่วันที่ตรวจร่างกาย
+            </div>
+            <div>(3) คำรับรองนี้เป็นการตรวจวินิจฉัยเบื้องต้น</div>
+            <div>
+              แบบฟอร์มนี้ได้รับการรับรองจากมติคณะกรรมการแพทยสภาในการประชุมครั้งที่
+              4/2561 วันที่ 19 เมษายน 2561
+            </div>
+          </div>
+
           <button type="button" class="save-btn" id="savePart2">บันทึกส่วนที่ 2</button>
           <button type="button" class="print-btn" id="printBtn">🖨️ พิมพ์ใบรับรองแพทย์</button>
         </form>
       </div>
 
       <script>
+        function clearForm() {
+          document.querySelectorAll("input, textarea, select").forEach((el) => {
+            if (el.type === "radio" || el.type === "checkbox") el.checked = false;
+            else el.value = "";
+          });
+        }
+
+        // ================== แสดงส่วน ==================
         function showPart(part) {
           document.getElementById("part1").classList.add("hide");
           document.getElementById("part2").classList.add("hide");
           document.getElementById("part" + part).classList.remove("hide");
 
+          // ✅ ถ้าไป part2 แล้ว และมีเลขใบรับรองใน temp -> เติมให้ช่องอัตโนมัติ
           if (part === 2 && tempPart1Data && tempPart1Data.certificate_no) {
             const p2 = document.getElementById("part2");
             const el = p2.querySelector('[name="certificate_no"]');
@@ -286,6 +680,7 @@
           }
         }
 
+        // helper กันพังเวลา name ไม่ตรง
         function getVal(root, selectors, fallback = "") {
           for (const sel of selectors) {
             const el = root.querySelector(sel);
@@ -298,6 +693,7 @@
           return el ? el.value : fallback;
         }
 
+        // ✅ สร้างเลขที่ใบรับรองอัตโนมัติ (ถ้าไม่กรอก)
         function genCertificateNo() {
           const d = new Date();
           const y = d.getFullYear();
@@ -307,10 +703,14 @@
           return `MC-${y}${m}${day}-${tail}`;
         }
 
+        // เก็บข้อมูลส่วนที่ 1 ชั่วคราวใน memory
         let tempPart1Data = null;
 
+        // ================== ⭐ บันทึกส่วนที่ 1 ==================
         document.getElementById("savePart1").addEventListener("click", function () {
           const p1 = document.getElementById("part1");
+
+          // ✅ ถ้ายังไม่มีเลขใบรับรอง ให้ generate ไว้ตั้งแต่ส่วนที่ 1 (ให้เลขคงที่ทั้ง save/print)
           const certNo = (tempPart1Data && tempPart1Data.certificate_no) || genCertificateNo();
 
           tempPart1Data = {
@@ -332,38 +732,45 @@
 
             other_history: getVal(p1, ['[name="other_history"]']),
             requester_sign: getVal(p1, ['[name="signer"]']),
-            requester_date: getVal(p1, ['[name="date"]'])
+            requester_date: getVal(p1, ['[name="date"]']),
           };
 
           alert("✔ บันทึกส่วนที่ 1 แล้ว — ไปกรอกส่วนที่ 2 ต่อ");
           showPart(2);
         });
 
+        // ================== ⭐ ปุ่มพิมพ์ส่วนที่ 1 ==================
         document.getElementById("printBtn1").addEventListener("click", function () {
           const p1 = document.getElementById("part1");
           const certNo = (tempPart1Data && tempPart1Data.certificate_no) || genCertificateNo();
 
           const printData = {
             certificate_no: certNo,
+
             title: getVal(p1, ['[name="title"]', "select"]),
             fullname: getVal(p1, ['[name="fullname"]']),
             address: getVal(p1, ['[name="address"]']),
             citizenId: getVal(p1, ['[name="citizenId"]']),
+
             disease: getRadio(p1, "disease", ""),
             disease_detail: getVal(p1, ['[name="disease_detail"]']),
+
             accident: getRadio(p1, "accident", ""),
             accident_detail: getVal(p1, ['[name="accident_detail"]']),
+
             hospital: getRadio(p1, "hospital_history", ""),
             hospital_detail: getVal(p1, ['[name="hospital_history_detail"]']),
+
             other_history: getVal(p1, ['[name="other_history"]']),
             requester_sign: getVal(p1, ['[name="signer"]']),
-            requester_date: getVal(p1, ['[name="date"]'])
+            requester_date: getVal(p1, ['[name="date"]']),
           };
 
           localStorage.setItem("tempCertificateData", JSON.stringify(printData));
           window.open("/medical_certificate/print", "_blank");
         });
 
+        // ================== ⭐ บันทึกส่วนที่ 2 ==================
         document.getElementById("savePart2").addEventListener("click", async function () {
           if (!tempPart1Data) {
             alert("❌ กรุณาบันทึกส่วนที่ 1 ก่อน");
@@ -372,41 +779,45 @@
           }
 
           const p2 = document.getElementById("part2");
+
           const certNo =
             getVal(p2, ['[name="certificate_no"]']) ||
             tempPart1Data.certificate_no ||
             genCertificateNo();
 
+          // ✅ sync กลับไป temp ด้วย (ให้เลขเดียวกันทุกที่)
           tempPart1Data.certificate_no = certNo;
 
-          const finalRecord = {
-            ...tempPart1Data,
-
+          const part2Data = {
+            certificate_no: certNo,
             doctor_name: getVal(p2, ['[name="doctor_name"]']),
             hospital_name: getVal(p2, ['[name="hospital_name"]']),
             hospital_address: getVal(p2, ['[name="hospital_address"]']),
+            license: getVal(p2, ['[name="license"]']),
+            exam_date: getVal(p2, ['[name="exam_date"]']),
             weight: getVal(p2, ['[name="weight"]']),
             height: getVal(p2, ['[name="height"]']),
             bp: getVal(p2, ['[name="bp"]']),
             pulse: getVal(p2, ['[name="pulse"]']),
-            exam_date: getVal(p2, ['[name="exam_date"]']),
-            license: getVal(p2, ['[name="license"]']),
-            certificate_no: certNo,
             body_status: getVal(p2, ['[name="body_status"]']),
             body_detail: getVal(p2, ['[name="body_detail"]']),
             other_disease: getVal(p2, ['[name="other_disease"]']),
             work_result: getRadio(p2, "work_result", ""),
-            doctor_sign: getVal(p2, ['[name="doctor_sign"]'])
+            doctor_sign: getVal(p2, ['[name="doctor_sign"]']),
           };
+
+          const finalRecord = { ...tempPart1Data, ...part2Data };
 
           try {
             const response = await fetch("/api/medical_certificate/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(finalRecord)
+              body: JSON.stringify(finalRecord),
             });
 
             const result = await response.json();
+
+            // ✅ รองรับทั้ง {success:true} และ {ok:true}
             const ok = !!(result && (result.success || result.ok));
 
             if (ok) {
@@ -422,6 +833,7 @@
           }
         });
 
+        // ================== ⭐ ปุ่มพิมพ์ (หลังกรอกส่วนที่ 2) ==================
         document.getElementById("printBtn").addEventListener("click", function () {
           if (!tempPart1Data) {
             alert("❌ กรุณากรอกและบันทึกส่วนที่ 1 ก่อน");
@@ -430,6 +842,7 @@
           }
 
           const p2 = document.getElementById("part2");
+
           const certNo =
             getVal(p2, ['[name="certificate_no"]']) ||
             tempPart1Data.certificate_no ||
@@ -439,22 +852,22 @@
 
           const printData = {
             ...tempPart1Data,
+            certificate_no: certNo,
 
             doctor_name: getVal(p2, ['[name="doctor_name"]']),
             hospital_name: getVal(p2, ['[name="hospital_name"]']),
             hospital_address: getVal(p2, ['[name="hospital_address"]']),
+            license: getVal(p2, ['[name="license"]']),
+            exam_date: getVal(p2, ['[name="exam_date"]']),
             weight: getVal(p2, ['[name="weight"]']),
             height: getVal(p2, ['[name="height"]']),
             bp: getVal(p2, ['[name="bp"]']),
             pulse: getVal(p2, ['[name="pulse"]']),
-            exam_date: getVal(p2, ['[name="exam_date"]']),
-            license: getVal(p2, ['[name="license"]']),
-            certificate_no: certNo,
             body_status: getVal(p2, ['[name="body_status"]']),
             body_detail: getVal(p2, ['[name="body_detail"]']),
             other_disease: getVal(p2, ['[name="other_disease"]']),
             work_result: getRadio(p2, "work_result", ""),
-            doctor_sign: getVal(p2, ['[name="doctor_sign"]'])
+            doctor_sign: getVal(p2, ['[name="doctor_sign"]']),
           };
 
           localStorage.setItem("tempCertificateData", JSON.stringify(printData));
