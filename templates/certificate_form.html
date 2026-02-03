@@ -4,472 +4,85 @@
     <meta charset="UTF-8" />
     <title>ใบรับรองแพทย์</title>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
+      .header { font-size: 16px; }
+      body { font-family: "Sarabun", sans-serif; background: #f4f6f8; margin: 0; }
+      .container { font-size: 24px; }
 
-      .header {
-        font-size: 16px;
-      }
-
-      body {
-        font-family: "Sarabun", sans-serif;
-        background: #f4f6f8;
-        margin: 0;
-      }
-
-      .container {
-        font-size: 24px;
-      }
-
-      /* ================= HEADER ================= */
       .header {
         width: 100%;
         background: #ffffff;
         border-bottom: 1px solid #e0e0e0;
         padding: 14px 40px;
-
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        display: flex; align-items: center; justify-content: space-between;
       }
+      .header-left { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #5b2c83; }
+      .header-left i { font-size: 26px; }
+      .header-right { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+      .logout-btn { background: #ff6b6b; color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+      .label-bold { font-weight: 700; }
 
-      .header-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 20px;
-        font-weight: 700;
-        color: #5b2c83;
-      }
+      .q-row, .doctor-row, .line-group { margin-bottom: 22px; }
+      label { display: block; margin-bottom: 10px; }
+      input, textarea, select { margin-top: 6px; }
 
-      .header-left i {
-        font-size: 26px;
-      }
+      .option-row input[type="radio"] { transform: scale(1.6); margin-right: 6px; }
+      .option-row label { font-size: 22px; }
 
-      .header-right {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        font-size: 14px;
-      }
-
-      .logout-btn {
-        background: #ff6b6b;
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .label-bold {
-        font-weight: 700;
-      }
-
-      /* ===== ระยะห่าง label กับ input ===== */
-      .q-row,
-      .doctor-row,
-      .line-group {
-        margin-bottom: 22px;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 10px;
-      }
-
-      /* ช่องกรอกอ่านง่ายขึ้น */
-      input,
-      textarea,
-      select {
-        margin-top: 6px;
-      }
-
-      /* ===== ขยาย radio button ===== */
-      .option-row input[type="radio"] {
-        transform: scale(1.6);
-        margin-right: 6px;
-      }
-
-      .option-row label {
-        font-size: 22px;
-      }
+      .paper { position: relative; max-width: 1500px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.25); }
+      h2 { text-align: center; margin-top: 10px; margin-bottom: 30px; font-size: 32px; font-weight: 700; }
 
       .paper > a.save-btn {
-        text-decoration: none;
+        position: absolute; top: 15px; left: 15px;
+        background: #28a745; color: #fff; padding: 10px 18px; border-radius: 8px;
+        font-size: 18px; font-weight: 600; text-decoration: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       }
+      .paper > a.save-btn:hover { background: #218838; }
 
-      .paper > a.save-btn:hover {
-        text-decoration: none;
-      }
-
-      /* ================= BASE ================= */
-      body {
-        font-family: "Sarabun", sans-serif;
-        font-size: 24px;
-        background: #f4f6f8;
-        margin: 0;
-      }
-
-      /* ================= กรอบหลัก (เหมือนเมนูใบรับรองแพทย์) ================= */
-      .paper {
-        position: relative;
-        max-width: 1500px;
-        margin: 40px auto;
-        background: #fff;
-        padding: 40px;
-        border-radius: 14px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-        box-sizing: border-box;
-      }
-
-      /* ================= หัวข้อ ================= */
-      h2 {
-        text-align: center;
-        margin-top: 10px;
-        margin-bottom: 30px;
-        font-size: 32px;
-        font-weight: 700;
-      }
-
-      /* ================= ปุ่มกลับเมนู ================= */
-      .paper > a.save-btn {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        background: #28a745;
-        color: #fff;
-        padding: 10px 18px;
-        border-radius: 8px;
-        font-size: 18px;
-        font-weight: 600;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      }
-
-      .paper > a.save-btn:hover {
-        background: #218838;
-      }
-
-      /* ================= แถบสลับส่วน ================= */
-      .tab {
-        text-align: center;
-        margin-bottom: 25px;
-      }
-
+      .tab { text-align: center; margin-bottom: 25px; }
       .tab button {
-        padding: 18px 32px;
-        margin: 0 10px;
-        font-size: 24px;
-        font-weight: 600;
-        border: none;
-        border-radius: 14px;
-        cursor: pointer;
-        color: #fff;
+        padding: 18px 32px; margin: 0 10px; font-size: 24px; font-weight: 600;
+        border: none; border-radius: 14px; cursor: pointer; color: #fff;
         background: linear-gradient(135deg, #1e88e5, #90caf9);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
       }
+      .tab button:hover { transform: translateY(-3px); }
 
-      .tab button:hover {
-        transform: translateY(-3px);
-      }
+      .section-title, b { font-size: 24px; font-weight: 700; margin-top: 14px; }
+      .form-title { font-size: 32px; font-weight: 700; text-align: center; }
 
-      /* ================= หัวข้อย่อย ================= */
-      .section-title,
-      b {
-        font-size: 24px;
-        font-weight: 700;
-        margin-top: 14px;
-      }
-
-      .form-title {
-        font-size: 32px;
-        font-weight: 700;
-        text-align: center;
-      }
-
-      /* ================= ช่องกรอก ================= */
-      input,
-      textarea,
-      select {
-        width: 100%;
-        padding: 14px;
-        font-size: 24px;
-        border-radius: 14px;
-        border: 1px solid #bbb;
-        box-sizing: border-box;
-      }
-
-      /* ================= ปุ่มบันทึก / พิมพ์ ================= */
-      .save-btn,
-      .print-btn {
-        margin-top: 24px;
-        padding: 18px 32px;
-        font-size: 24px;
-        font-weight: 600;
-        border: none;
-        border-radius: 14px;
-        cursor: pointer;
-        color: #fff;
+      input, textarea, select { width: 100%; padding: 14px; font-size: 24px; border-radius: 14px; border: 1px solid #bbb; }
+      .save-btn, .print-btn {
+        margin-top: 24px; padding: 18px 32px; font-size: 24px; font-weight: 600;
+        border: none; border-radius: 14px; cursor: pointer; color: #fff;
         background: linear-gradient(135deg, #1e88e5, #90caf9);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
       }
+      .print-btn { margin-left: 10px; }
 
-      .print-btn {
-        margin-left: 10px;
-      }
+      .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .doctor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
+      .doctor-col { min-width: 0; }
+      .option-row { display: flex; align-items: center; gap: 10px; }
 
-      /* ================= GRID ================= */
-      .health-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-      }
+      .hide { display: none; }
 
-      .option-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      /* ================= HIDE ================= */
-      .hide {
-        display: none;
-      }
-
-      /* ================= PRINT (คงเดิมของคุณ) ================= */
-      /* =================================================
-   PRINT : MEDICAL CERTIFICATE A4 (ONE PAGE)
-================================================= */
-      @media print {
-        /* ===== (1) เว้น 1 บรรทัดก่อนส่วนที่ 2 ===== */
-        #part2 .form-title {
-          margin-top: 12px !important;
-        }
-
-        /* ===== (3) ขยายหัวข้อหนา +2px ===== */
-        .form-title,
-        .section-title,
-        b,
-        strong {
-          font-size: 18px !important;
-          /* เดิม 16px */
-          font-weight: 700 !important;
-          margin: 6px 0 4px;
-        }
-
-        /* ===== (4) เพิ่มช่องว่างระหว่างหัวข้อกับ radio ===== */
-        .option-row {
-          margin-top: 4px !important;
-          gap: 14px !important;
-        }
-
-        /* ===== radio ไม่ติดตัวอักษร ===== */
-        .option-row label {
-          margin-right: 10px !important;
-        }
-
-        /* ===== (2) หมายเหตุ ขนาดเท่าข้อความปกติ ===== */
-        .note div {
-          font-size: 16px !important;
-          /* เดิม 12px */
-          line-height: 1.25 !important;
-        }
-
-        /* ===== บีบระยะห่างทั้งหมดเพื่อให้จบ 1 หน้า ===== */
-        .q-row,
-        .doctor-row,
-        .line-group {
-          margin-bottom: 6px !important;
-        }
-
-        label {
-          margin-bottom: 2px !important;
-        }
-
-        input,
-        textarea,
-        select {
-          margin-top: 0 !important;
-          padding: 0 !important;
-        }
-
-        /* ===== บีบ paragraph ===== */
-        p {
-          margin: 4px 0 !important;
-        }
-
-        /* ===== บีบ div ทั่วไป ===== */
-        div {
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-        }
-
-        @page {
-          size: A4;
-          margin: 15mm;
-        }
-
-        html,
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: "Sarabun", sans-serif !important;
-          font-size: 16px;
-          line-height: 1.25;
-          color: #000;
-          zoom: 0.85;
-          /* ⭐ ตัวนี้ทำให้ลง 1 หน้าแน่นอน */
-        }
-
-        /* ===== ซ่อน UI ===== */
-        button,
-        .tab,
-        .save-btn,
-        .print-btn,
-        a {
-          display: none !important;
-        }
-
-        /* ===== กล่องกระดาษ ===== */
-        .paper,
-        form {
-          max-width: 100% !important;
-          box-shadow: none !important;
-          border: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-
-        /* ===== หัวข้อหลัก ===== */
-        h2 {
-          font-size: 18px !important;
-          font-weight: 700;
-          text-align: center;
-          margin: 0 0 8px 0;
-        }
-
-        /* ===== ข้อความทั่วไป ===== */
-        div,
-        p,
-        label,
-        span {
-          font-size: 16px !important;
-          font-weight: 400 !important;
-          margin: 0;
-          padding: 0;
-        }
-
-        /* ===== input / textarea ===== */
-        input,
-        textarea,
-        select {
-          font-family: "Sarabun", sans-serif !important;
-          font-size: 16px !important;
-          border: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          outline: none !important;
-        }
-
-        textarea {
-          resize: none;
-        }
-
-        /* ===== grid ให้แน่น ===== */
-        .health-grid,
-        .doctor-grid {
-          gap: 10px !important;
-        }
-
-        /* ===== ห้ามตัดหน้า ===== */
-        #part1,
-        #part2,
-        .note {
-          display: block !important;
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-      }
-
-      /* ================= ซ่อน Header / Footer / UI นอกเอกสาร ================= */
-      @media print {
-        /* ซ่อน header ด้านบนทั้งหมด */
-        .header,
-        .header * {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* ซ่อน footer ด้านล่าง */
-        .footer {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* กันพื้นที่ header/footer ไม่ให้ดันกระดาษ */
-        body {
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-        }
-
-        /* ================= ซ่อน URL + เลขหน้า (Browser) ================= */
-        @page {
-          size: A4;
-          margin: 15mm;
-
-          /* Chrome / Edge */
-          @bottom-left {
-            content: none;
-          }
-
-          @bottom-right {
-            content: none;
-          }
-
-          @top-left {
-            content: none;
-          }
-
-          @top-right {
-            content: none;
-          }
-        }
-      }
-
-      /* ================= FOOTER ================= */
-      .footer {
-        width: 100%;
-        background: #dcdcdc;
-        text-align: center;
-        padding: 18px;
-        font-size: 14px;
-        color: #555;
-        margin-top: 60px;
-      }
+      .footer { width: 100%; background: #dcdcdc; text-align: center; padding: 18px; font-size: 14px; color: #555; margin-top: 60px; }
     </style>
   </head>
 
   <body>
-    <!-- ===== HEADER ===== -->
     <div class="header">
       <div class="header-left">
         <i class="fa-solid fa-stethoscope"></i>
         ห้องพยาบาล CPF ขอนแก่น
       </div>
-
       <div class="header-right">
-        {{ session.get('user_name', 'User') }} ({{ session.get('role', 'user')
-        }}) | หน่วยงาน Safety
+        {{ session.get('user_name', 'User') }} ({{ session.get('role', 'user') }}) | หน่วยงาน Safety
         <a href="/logout" class="logout-btn">ออก</a>
       </div>
     </div>
@@ -478,24 +91,20 @@
       <div class="paper">
         <h2>ใบรับรองแพทย์</h2>
 
-        <!-- ✅ ปุ่มกลับเมนู อยู่ในกรอบ -->
         <a href="/medical_certificate" class="save-btn">⬅ ย้อนกลับ</a>
 
         <div class="tab" id="menu">
-          <button type="button" onclick="showPart(1)">
-            ส่วนที่ 1 ผู้ขอรับใบรับรอง
-          </button>
+          <button type="button" onclick="showPart(1)">ส่วนที่ 1 ผู้ขอรับใบรับรอง</button>
           <button type="button" onclick="showPart(2)">ส่วนที่ 2 แพทย์</button>
         </div>
 
         <!-- ========= PART 1 ========= -->
         <form id="part1">
           <div class="form-title">ส่วนที่ 1 ผู้ขอรับใบรับรอง</div>
-          <div class="line"></div>
 
-          <div class="q-row hide-print">
+          <div class="q-row">
             <label class="label-bold">คำนำหน้า</label>
-            <select>
+            <select name="title">
               <option>นาย</option>
               <option>นาง</option>
               <option>นางสาว</option>
@@ -523,13 +132,8 @@
             <div class="line-group">
               1) โรคประจำตัว
               <div class="option-row">
-                <label
-                  ><input type="radio" name="disease" value="ไม่มี" />
-                  ไม่มี</label
-                >
-                <label
-                  ><input type="radio" name="disease" value="มี" /> มี</label
-                >
+                <label><input type="radio" name="disease" value="ไม่มี" /> ไม่มี</label>
+                <label><input type="radio" name="disease" value="มี" /> มี</label>
                 <input type="text" name="disease_detail" placeholder="ระบุ" />
               </div>
             </div>
@@ -537,13 +141,8 @@
             <div class="line-group">
               2) อุบัติเหตุ / ผ่าตัด
               <div class="option-row">
-                <label
-                  ><input type="radio" name="accident" value="ไม่มี" />
-                  ไม่มี</label
-                >
-                <label
-                  ><input type="radio" name="accident" value="มี" /> มี</label
-                >
+                <label><input type="radio" name="accident" value="ไม่มี" /> ไม่มี</label>
+                <label><input type="radio" name="accident" value="มี" /> มี</label>
                 <input type="text" name="accident_detail" placeholder="ระบุ" />
               </div>
             </div>
@@ -551,18 +150,9 @@
             <div class="line-group">
               3) เคยรักษาในโรงพยาบาล
               <div class="option-row">
-                <label>
-                  <input type="radio" name="hospital_history" value="ไม่มี" />
-                  ไม่มี
-                </label>
-                <label>
-                  <input type="radio" name="hospital_history" value="มี" /> มี
-                </label>
-                <input
-                  type="text"
-                  name="hospital_history_detail"
-                  placeholder="ระบุ"
-                />
+                <label><input type="radio" name="hospital_history" value="ไม่มี" /> ไม่มี</label>
+                <label><input type="radio" name="hospital_history" value="มี" /> มี</label>
+                <input type="text" name="hospital_history_detail" placeholder="ระบุ" />
               </div>
             </div>
 
@@ -571,6 +161,7 @@
               <textarea name="other_history"></textarea>
             </div>
           </div>
+
           <div class="doctor-grid">
             <div class="doctor-col">
               <label class="section-title">ลงชื่อผู้รับใบรับรอง</label>
@@ -583,12 +174,8 @@
             </div>
           </div>
 
-          <button type="button" class="save-btn" id="savePart1">
-            บันทึกส่วนที่ 1
-          </button>
-          <button type="button" class="print-btn" id="printBtn1">
-            🖨️ พิมพ์ใบรับรองแพทย์
-          </button>
+          <button type="button" class="save-btn" id="savePart1">บันทึกส่วนที่ 1</button>
+          <button type="button" class="print-btn" id="printBtn1">🖨️ พิมพ์ใบรับรองแพทย์</button>
         </form>
 
         <!-- ========= PART 2 ========= -->
@@ -596,7 +183,6 @@
           <div class="form-title">ส่วนที่ 2 ของแพทย์</div>
 
           <div class="doctor-grid">
-            <!-- ===== คอลัมน์ซ้าย ===== -->
             <div class="doctor-col">
               <div class="doctor-row">
                 <label class="section-title">ชื่อแพทย์</label>
@@ -615,42 +201,21 @@
 
               <div class="doctor-row">
                 <label class="section-title">ผลการตรวจร่างกาย</label>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap">
-                  <input
-                    name="weight"
-                    type="text"
-                    placeholder="น้ำหนัก (กก.)"
-                    style="width: 120px"
-                  />
-                  <input
-                    name="height"
-                    type="text"
-                    placeholder="ส่วนสูง (ซม.)"
-                    style="width: 120px"
-                  />
-                  <input
-                    name="bp"
-                    type="text"
-                    placeholder="ความดัน (mmHg)"
-                    style="width: 140px"
-                  />
-                  <input
-                    name="pulse"
-                    type="text"
-                    placeholder="ชีพจร (ครั้ง/นาที)"
-                    style="width: 140px"
-                  />
+                <div style="display:flex; gap:10px; flex-wrap:wrap">
+                  <input name="weight" type="text" placeholder="น้ำหนัก (กก.)" style="width:120px" />
+                  <input name="height" type="text" placeholder="ส่วนสูง (ซม.)" style="width:120px" />
+                  <input name="bp" type="text" placeholder="ความดัน (mmHg)" style="width:140px" />
+                  <input name="pulse" type="text" placeholder="ชีพจร (ครั้ง/นาที)" style="width:140px" />
                 </div>
               </div>
             </div>
 
-            <!-- ===== คอลัมน์ขวา ===== -->
-            <div class="doctor-row">
-              <label class="section-title">เลขที่ใบรับรอง</label>
-              <input name="certificate_no" placeholder="เช่น CPF-MC-2569-0001" />
-            </div>
-
             <div class="doctor-col">
+              <div class="doctor-row">
+                <label class="section-title">เลขที่ใบรับรอง</label>
+                <input name="certificate_no" placeholder="เช่น MC-20260203-12345" />
+              </div>
+
               <div class="doctor-row">
                 <label class="section-title">เลขที่ใบประกอบวิชาชีพ</label>
                 <input name="license" />
@@ -658,134 +223,69 @@
 
               <div class="doctor-row">
                 <label class="section-title">วันที่ตรวจ</label>
-                <!-- ✅ แก้จุดสำคัญ: จาก name="date" -> name="exam_date" -->
                 <input type="date" name="exam_date" />
               </div>
 
               <div class="doctor-row">
-                <label class="section-title"
-                  >สภาพร่างกายทั่วไปอยู่ในเกณฑ์</label
-                >
-                <input name="body_status" />
+                <label class="section-title">สภาพร่างกายทั่วไปอยู่ในเกณฑ์</label>
+                <input name="body_status" placeholder="ปกติ / ผิดปกติ" />
               </div>
             </div>
           </div>
 
-          <p style="text-indent: 2em; line-height: 1.4">
-            ขอรับรองว่า บุคคลดังกล่าว
-            ไม่เป็นผู้มีร่างกายทุพพลภาพจนไม่สามารถปฏิบัติหน้าที่ได้
+          <p style="text-indent:2em; line-height:1.4">
+            ขอรับรองว่า บุคคลดังกล่าว ไม่เป็นผู้มีร่างกายทุพพลภาพจนไม่สามารถปฏิบัติหน้าที่ได้
             ไม่ปรากฏอาการของโรคจิต หรือจิตฟั่นเฟือน หรือปัญญาอ่อน
             ไม่ปรากฏอาการของการติดยาเสพติดให้โทษ และอาการของโรคพิษสุราเรื้อรัง
             และไม่ปรากฏอาการและอาการแสดงของโรคต่อไปนี้
           </p>
-          <div class="section-title">
-            และไม่ปรากฏอาการและอาการแสดงของโรคต่อไปนี้
-          </div>
 
-          <div>
-            (1) โรคเรื้อนในระยะติดต่อ
-            หรือในระยะที่ปรากฏอาการเป็นที่รังเกียจแก่สังคม
-          </div>
+          <div>(1) โรคเรื้อนในระยะติดต่อ หรือในระยะที่ปรากฏอาการเป็นที่รังเกียจแก่สังคม</div>
           <div>(2) วัณโรคในระยะอันตราย</div>
           <div>(3) โรคเท้าช้างในระยะที่ปรากฏอาการเป็นที่รังเกียจแก่สังคม</div>
           <div>
             (4) อื่น ๆ (ถ้ามี)
-            <input
-              name="other_disease"
-              type="text"
-              style="width: 70%"
-              placeholder="ระบุโรคอื่น ๆ"
-            />
+            <input name="other_disease" type="text" style="width:70%" placeholder="ระบุโรคอื่น ๆ" />
           </div>
-          <br />
 
-          <div style="margin-top: 20px">
-            <div style="margin-bottom: 12px">
-              <label class="section-title"
-                >สรุปความเห็น / ผลการทำงานในที่สีบอากาศ</label
-              >
-              <div
-                style="
-                  display: flex;
-                  gap: 10px;
-                  flex-wrap: wrap;
-                  margin-top: 8px;
-                "
-              >
-                <label
-                  ><input type="radio" name="work_result" value="ได้" />
-                  สามารถทำงานได้</label
-                >
-                <label
-                  ><input type="radio" name="work_result" value="ไม่ได้" />
-                  ไม่สามารถทำงานได้</label
-                >
+          <div style="margin-top:20px">
+            <div style="margin-bottom:12px">
+              <label class="section-title">สรุปความเห็น / ผลการทำงานในที่อับอากาศ</label>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
+                <label><input type="radio" name="work_result" value="ได้" /> สามารถทำงานได้</label>
+                <label><input type="radio" name="work_result" value="ไม่ได้" /> ไม่สามารถทำงานได้</label>
               </div>
             </div>
 
-            <div style="margin-bottom: 12px">
+            <div style="margin-bottom:12px">
               <label class="section-title">ความเห็นเพิ่มเติม</label>
-              <textarea
-                name="body_detail"
-                rows="3"
-                placeholder="ระบุความเห็นเพิ่มเติม (ถ้ามี)"
-              ></textarea>
+              <textarea name="body_detail" rows="3" placeholder="ระบุความเห็นเพิ่มเติม (ถ้ามี)"></textarea>
             </div>
 
             <div>
               <label class="section-title">ลงชื่อแพทย์ผู้ตรวจร่างกาย</label>
-              <input
-                name="doctor_sign"
-                type="text"
-                placeholder="ชื่อแพทย์ผู้ลงนาม"
-              />
+              <input name="doctor_sign" type="text" placeholder="ชื่อแพทย์ผู้ลงนาม" />
             </div>
           </div>
 
-          <div class="note">
-            <div class="section-title">หมายเหตุ</div>
-            <div>
-              (1) ต้องเป็นแพทย์ซึ่งได้ขึ้นทะเบียนรับใบอนุญาตประกอบวิชาชีพเวชกรรม
-            </div>
-            <div>
-              (2) ให้แสดงว่าเป็นผู้มีร่างกายสมบูรณ์เพียงใด
-              ใบรับรองแพทย์ฉบับนี้ให้ใช้ได้ 1 เดือนนับแต่วันที่ตรวจร่างกาย
-            </div>
-            <div>(3) คำรับรองนี้เป็นการตรวจวินิจฉัยเบื้องต้น</div>
-            <div>
-              แบบฟอร์มนี้ได้รับการรับรองจากมติคณะกรรมการแพทยสภาในการประชุมครั้งที่
-              4/2561 วันที่ 19 เมษายน 2561
-            </div>
-          </div>
-
-          <button type="button" class="save-btn" id="savePart2">
-            บันทึกส่วนที่ 2
-          </button>
-          <button type="button" class="print-btn" id="printBtn">
-            🖨️ พิมพ์ใบรับรองแพทย์
-          </button>
+          <button type="button" class="save-btn" id="savePart2">บันทึกส่วนที่ 2</button>
+          <button type="button" class="print-btn" id="printBtn">🖨️ พิมพ์ใบรับรองแพทย์</button>
         </form>
       </div>
 
       <script>
-        function clearForm() {
-          document.querySelectorAll("input, textarea, select").forEach((el) => {
-            if (el.type === "radio" || el.type === "checkbox") {
-              el.checked = false;
-            } else {
-              el.value = "";
-            }
-          });
-        }
-
-        // ================== แสดงส่วน ==================
         function showPart(part) {
           document.getElementById("part1").classList.add("hide");
           document.getElementById("part2").classList.add("hide");
           document.getElementById("part" + part).classList.remove("hide");
+
+          if (part === 2 && tempPart1Data && tempPart1Data.certificate_no) {
+            const p2 = document.getElementById("part2");
+            const el = p2.querySelector('[name="certificate_no"]');
+            if (el && !String(el.value || "").trim()) el.value = tempPart1Data.certificate_no;
+          }
         }
 
-        // helper กันพังเวลา name ไม่ตรง
         function getVal(root, selectors, fallback = "") {
           for (const sel of selectors) {
             const el = root.querySelector(sel);
@@ -798,174 +298,171 @@
           return el ? el.value : fallback;
         }
 
-        // เก็บข้อมูลส่วนที่ 1 ชั่วคราวใน memory (ไม่ใช่ localStorage)
+        function genCertificateNo() {
+          const d = new Date();
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          const tail = String(Date.now()).slice(-5);
+          return `MC-${y}${m}${day}-${tail}`;
+        }
+
         let tempPart1Data = null;
 
-        // ================== ⭐ บันทึกส่วนที่ 1 ==================
-        document
-          .getElementById("savePart1")
-          .addEventListener("click", function () {
-            const p1 = document.getElementById("part1");
+        document.getElementById("savePart1").addEventListener("click", function () {
+          const p1 = document.getElementById("part1");
+          const certNo = (tempPart1Data && tempPart1Data.certificate_no) || genCertificateNo();
 
-            tempPart1Data = {
-              title: getVal(p1, ["select"]),
-              fullname: getVal(p1, ['[name="fullname"]']),
-              address: getVal(p1, ['[name="address"]']),
-              citizenId: getVal(p1, ['[name="citizenId"]']),
-              disease: getRadio(p1, "disease", ""),
-              disease_detail: getVal(p1, ['[name="disease_detail"]']),
-              accident: getRadio(p1, "accident", ""),
-              accident_detail: getVal(p1, ['[name="accident_detail"]']),
-              hospital: getRadio(p1, "hospital_history", ""),
-              hospital_detail: getVal(p1, ['[name="hospital_history_detail"]']),
-              other_history: getVal(p1, ['[name="other_history"]']),
-              requester_sign: getVal(p1, ['[name="signer"]']),
-              requester_date: getVal(p1, ['[name="date"]']),
-            };
+          tempPart1Data = {
+            certificate_no: certNo,
 
-            alert("✔ บันทึกส่วนที่ 1 แล้ว — ไปกรอกส่วนที่ 2 ต่อ");
-            showPart(2);
-          });
+            title: getVal(p1, ['[name="title"]', "select"]),
+            fullname: getVal(p1, ['[name="fullname"]']),
+            address: getVal(p1, ['[name="address"]']),
+            citizenId: getVal(p1, ['[name="citizenId"]']),
 
-        // ================== ⭐ ปุ่มพิมพ์ส่วนที่ 1 ==================
-        document
-          .getElementById("printBtn1")
-          .addEventListener("click", function () {
-            const p1 = document.getElementById("part1");
+            disease: getRadio(p1, "disease", ""),
+            disease_detail: getVal(p1, ['[name="disease_detail"]']),
 
-            // รวมข้อมูลส่วนที่ 1
-            const printData = {
-              title: getVal(p1, ["select"]),
-              fullname: getVal(p1, ['[name="fullname"]']),
-              address: getVal(p1, ['[name="address"]']),
-              citizenId: getVal(p1, ['[name="citizenId"]']),
-              disease: getRadio(p1, "disease", ""),
-              disease_detail: getVal(p1, ['[name="disease_detail"]']),
-              accident: getRadio(p1, "accident", ""),
-              accident_detail: getVal(p1, ['[name="accident_detail"]']),
-              hospital: getRadio(p1, "hospital_history", ""),
-              hospital_detail: getVal(p1, ['[name="hospital_history_detail"]']),
-              other_history: getVal(p1, ['[name="other_history"]']),
-              requester_sign: getVal(p1, ['[name="signer"]']),
-              requester_date: getVal(p1, ['[name="date"]']),
-            };
+            accident: getRadio(p1, "accident", ""),
+            accident_detail: getVal(p1, ['[name="accident_detail"]']),
 
-            // บันทึกลง localStorage
-            localStorage.setItem(
-              "tempCertificateData",
-              JSON.stringify(printData),
-            );
+            hospital: getRadio(p1, "hospital_history", ""),
+            hospital_detail: getVal(p1, ['[name="hospital_history_detail"]']),
 
-            // เปิดหน้าพิมพ์ในแท็บใหม่
-            window.open("/medical_certificate/print", "_blank");
-          });
+            other_history: getVal(p1, ['[name="other_history"]']),
+            requester_sign: getVal(p1, ['[name="signer"]']),
+            requester_date: getVal(p1, ['[name="date"]'])
+          };
 
-        // ================== ⭐ บันทึกส่วนที่ 2 ==================
-        document
-          .getElementById("savePart2")
-          .addEventListener("click", async function () {
-            if (!tempPart1Data) {
-              alert("❌ กรุณาบันทึกส่วนที่ 1 ก่อน");
-              showPart(1);
-              return;
+          alert("✔ บันทึกส่วนที่ 1 แล้ว — ไปกรอกส่วนที่ 2 ต่อ");
+          showPart(2);
+        });
+
+        document.getElementById("printBtn1").addEventListener("click", function () {
+          const p1 = document.getElementById("part1");
+          const certNo = (tempPart1Data && tempPart1Data.certificate_no) || genCertificateNo();
+
+          const printData = {
+            certificate_no: certNo,
+            title: getVal(p1, ['[name="title"]', "select"]),
+            fullname: getVal(p1, ['[name="fullname"]']),
+            address: getVal(p1, ['[name="address"]']),
+            citizenId: getVal(p1, ['[name="citizenId"]']),
+            disease: getRadio(p1, "disease", ""),
+            disease_detail: getVal(p1, ['[name="disease_detail"]']),
+            accident: getRadio(p1, "accident", ""),
+            accident_detail: getVal(p1, ['[name="accident_detail"]']),
+            hospital: getRadio(p1, "hospital_history", ""),
+            hospital_detail: getVal(p1, ['[name="hospital_history_detail"]']),
+            other_history: getVal(p1, ['[name="other_history"]']),
+            requester_sign: getVal(p1, ['[name="signer"]']),
+            requester_date: getVal(p1, ['[name="date"]'])
+          };
+
+          localStorage.setItem("tempCertificateData", JSON.stringify(printData));
+          window.open("/medical_certificate/print", "_blank");
+        });
+
+        document.getElementById("savePart2").addEventListener("click", async function () {
+          if (!tempPart1Data) {
+            alert("❌ กรุณาบันทึกส่วนที่ 1 ก่อน");
+            showPart(1);
+            return;
+          }
+
+          const p2 = document.getElementById("part2");
+          const certNo =
+            getVal(p2, ['[name="certificate_no"]']) ||
+            tempPart1Data.certificate_no ||
+            genCertificateNo();
+
+          tempPart1Data.certificate_no = certNo;
+
+          const finalRecord = {
+            ...tempPart1Data,
+
+            doctor_name: getVal(p2, ['[name="doctor_name"]']),
+            hospital_name: getVal(p2, ['[name="hospital_name"]']),
+            hospital_address: getVal(p2, ['[name="hospital_address"]']),
+            weight: getVal(p2, ['[name="weight"]']),
+            height: getVal(p2, ['[name="height"]']),
+            bp: getVal(p2, ['[name="bp"]']),
+            pulse: getVal(p2, ['[name="pulse"]']),
+            exam_date: getVal(p2, ['[name="exam_date"]']),
+            license: getVal(p2, ['[name="license"]']),
+            certificate_no: certNo,
+            body_status: getVal(p2, ['[name="body_status"]']),
+            body_detail: getVal(p2, ['[name="body_detail"]']),
+            other_disease: getVal(p2, ['[name="other_disease"]']),
+            work_result: getRadio(p2, "work_result", ""),
+            doctor_sign: getVal(p2, ['[name="doctor_sign"]'])
+          };
+
+          try {
+            const response = await fetch("/api/medical_certificate/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(finalRecord)
+            });
+
+            const result = await response.json();
+            const ok = !!(result && (result.success || result.ok));
+
+            if (ok) {
+              alert("✔ บันทึกข้อมูลลง Google Sheets เรียบร้อย");
+              tempPart1Data = null;
+              window.location.href = "/medical_certificate/register";
+            } else {
+              alert("❌ บันทึกไม่สำเร็จ: " + (result.message || "Unknown error"));
             }
+          } catch (error) {
+            console.error("Error saving certificate:", error);
+            alert("❌ เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+          }
+        });
 
-            const p2 = document.getElementById("part2");
+        document.getElementById("printBtn").addEventListener("click", function () {
+          if (!tempPart1Data) {
+            alert("❌ กรุณากรอกและบันทึกส่วนที่ 1 ก่อน");
+            showPart(1);
+            return;
+          }
 
-            const part2Data = {
-              doctor_name: getVal(p2, ['[name="doctor_name"]']),
-              hospital_name: getVal(p2, ['[name="hospital_name"]']),
-              hospital_address: getVal(p2, ['[name="hospital_address"]']),
-              license: getVal(p2, ['[name="license"]']),
-              exam_date: getVal(p2, ['[name="exam_date"]']),
-              weight: getVal(p2, ['[name="weight"]']),
-              height: getVal(p2, ['[name="height"]']),
-              bp: getVal(p2, ['[name="bp"]']),
-              pulse: getVal(p2, ['[name="pulse"]']),
-              body_status: getVal(p2, ['[name="body_status"]']),
-              body_detail: getVal(p2, ['[name="body_detail"]']),
-              other_disease: getVal(p2, ['[name="other_disease"]']),
-              work_result: getRadio(p2, "work_result", ""),
-              doctor_sign: getVal(p2, ['[name="doctor_sign"]']),
-            };
+          const p2 = document.getElementById("part2");
+          const certNo =
+            getVal(p2, ['[name="certificate_no"]']) ||
+            tempPart1Data.certificate_no ||
+            genCertificateNo();
 
-            // รวมข้อมูลทั้ง 2 ส่วน
-            const finalRecord = {
-              ...tempPart1Data,
-              ...part2Data,
-            };
+          tempPart1Data.certificate_no = certNo;
 
-            // ส่งข้อมูลไป backend API
-            try {
-              const response = await fetch("/api/medical_certificate/add", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(finalRecord),
-              });
+          const printData = {
+            ...tempPart1Data,
 
-              const result = await response.json();
+            doctor_name: getVal(p2, ['[name="doctor_name"]']),
+            hospital_name: getVal(p2, ['[name="hospital_name"]']),
+            hospital_address: getVal(p2, ['[name="hospital_address"]']),
+            weight: getVal(p2, ['[name="weight"]']),
+            height: getVal(p2, ['[name="height"]']),
+            bp: getVal(p2, ['[name="bp"]']),
+            pulse: getVal(p2, ['[name="pulse"]']),
+            exam_date: getVal(p2, ['[name="exam_date"]']),
+            license: getVal(p2, ['[name="license"]']),
+            certificate_no: certNo,
+            body_status: getVal(p2, ['[name="body_status"]']),
+            body_detail: getVal(p2, ['[name="body_detail"]']),
+            other_disease: getVal(p2, ['[name="other_disease"]']),
+            work_result: getRadio(p2, "work_result", ""),
+            doctor_sign: getVal(p2, ['[name="doctor_sign"]'])
+          };
 
-              if (result.success) {
-                alert("✔ บันทึกข้อมูลลง Google Sheets เรียบร้อย");
-                tempPart1Data = null; // ล้างข้อมูลชั่วคราว
-                window.location.href = "/medical_certificate/register";
-              } else {
-                alert(
-                  "❌ บันทึกไม่สำเร็จ: " + (result.message || "Unknown error"),
-                );
-              }
-            } catch (error) {
-              console.error("Error saving certificate:", error);
-              alert("❌ เกิดข้อผิดพลาดในการบันทึก: " + error.message);
-            }
-          });
-
-        // ================== ⭐ ปุ่มพิมพ์ ==================
-        document
-          .getElementById("printBtn")
-          .addEventListener("click", function () {
-            if (!tempPart1Data) {
-              alert("❌ กรุณากรอกและบันทึกส่วนที่ 1 ก่อน");
-              showPart(1);
-              return;
-            }
-
-            const p2 = document.getElementById("part2");
-
-            // รวมข้อมูลทั้งหมด
-            const printData = {
-              ...tempPart1Data,
-              doctor_name: getVal(p2, ['[name="doctor_name"]']),
-              hospital_name: getVal(p2, ['[name="hospital_name"]']),
-              hospital_address: getVal(p2, ['[name="hospital_address"]']),
-              license: getVal(p2, ['[name="license"]']),
-              exam_date: getVal(p2, ['[name="exam_date"]']),
-              weight: getVal(p2, ['[name="weight"]']),
-              height: getVal(p2, ['[name="height"]']),
-              bp: getVal(p2, ['[name="bp"]']),
-              pulse: getVal(p2, ['[name="pulse"]']),
-              body_status: getVal(p2, ['[name="body_status"]']),
-              body_detail: getVal(p2, ['[name="body_detail"]']),
-              other_disease: getVal(p2, ['[name="other_disease"]']),
-              work_result: getRadio(p2, "work_result", ""),
-              doctor_sign: getVal(p2, ['[name="doctor_sign"]']),
-            };
-
-            // บันทึกลง localStorage
-            localStorage.setItem(
-              "tempCertificateData",
-              JSON.stringify(printData),
-            );
-
-            // เปิดหน้าพิมพ์ในแท็บใหม่
-            window.open("/medical_certificate/print", "_blank");
-          });
+          localStorage.setItem("tempCertificateData", JSON.stringify(printData));
+          window.open("/medical_certificate/print", "_blank");
+        });
       </script>
     </div>
 
-    <!-- ===== FOOTER ===== -->
     <div class="footer">© 2025 Safety Officer, CPF Khon Kaen Feedmill</div>
   </body>
 </html>
