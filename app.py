@@ -1293,16 +1293,55 @@ def has_supply(medicine_json_text):
     except:
         return False
 
+@app.get("/api/dashboard/item_master")
+@login_required
+def api_dashboard_item_master():
+    """
+    รวมรายชื่อทั้งหมดที่ต้องแสดงบนตาราง Dashboard:
+    - medicine (ทั้ง type=medicine และ type=supply)
+    - other_item (รายการอื่นๆ)
+    """
+    names = []
+    seen = set()
+
+    # 1) medicine (ยา/เวชภัณฑ์)
+    med_res = gas_list("medicine", 5000)
+    if med_res.get("ok"):
+        for m in med_res.get("data", []):
+            name = norm_text(m.get("name", ""))
+            if not name:
+                continue
+            k = norm_key(name)
+            if k not in seen:
+                seen.add(k)
+                names.append(name)
+
+    # 2) other_item (อื่นๆ)
+    other_res = gas_list("other_item", 5000)
+    if other_res.get("ok"):
+        for o in other_res.get("data", []):
+            name = norm_text(o.get("name") or o.get("item_name") or "")
+            if not name:
+                continue
+            k = norm_key(name)
+            if k not in seen:
+                seen.add(k)
+                names.append(name)
+
+    names.sort(key=lambda s: s.lower())
+    return jsonify({"items": names})
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
     return render_template("dashboard.html")
 
 @app.route("/api/dashboard/drug_summary")
+@login_required
 def dashboard_drug_summary():
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
-    
+
     def norm(s):
         if s is None:
             return ""
@@ -1311,146 +1350,226 @@ def dashboard_drug_summary():
             s = s.replace(ch, "-")
         s = " ".join(s.split())
         return s
-    
-    # ดึง master ยา
-    med_res = gas_list("medicine", 1000)
+
+    # -----------------------------
+    # 1) master: medicine + other_item
+    # -----------------------------
+    med_res = gas_list("medicine", 5000)
     meds = med_res.get("data", []) if med_res.get("ok") else []
-    
+
+    other_res = gas_list("other_item", 5000)
+    others = other_res.get("data", []) if other_res.get("ok") else []
+
     result = {}
     name_map = {}
-    
-    for m in meds:
-        display = str(m.get("name", "")).strip()
-        key = norm(display)
-        if not key:
-            continue
+
+    def add_master_name(display_name: str):
+        display_name = str(display_name or "").strip()
+        if not display_name:
+            return
+        key = norm(display_name)
         if key not in name_map:
-            name_map[key] = display
+            name_map[key] = display_name
         disp = name_map[key]
-        result[disp] = {"used": 0, "remain": 0, "has_used": False, "has_lot": False}
-    
+        if disp not in result:
+            result[disp] = {"used": 0, "remain": 0, "has_used": False, "has_lot": False}
+
+    # เติมจากยา/เวชภัณฑ์
+    for m in meds:
+        add_master_name(m.get("name", ""))
+
+    # เติมจากรายการอื่นๆ
+    for o in others:
+        add_master_name(o.get("name") or o.get("item_name") or "")
+
     def to_display(any_name):
         k = norm(any_name)
         return name_map.get(k)
-    
-    # ดึง lots
+
+    # -----------------------------
+    # 2) คงเหลือ: medicine_lot
+    # -----------------------------
     lot_res = gas_list("medicine_lot", 10000)
     lots = lot_res.get("data", []) if lot_res.get("ok") else []
-    
-    # สร้าง map medicine_id -> name
+
     med_id_to_name = {str(m.get("id")): str(m.get("name", "")).strip() for m in meds}
-    
+
     for lot in lots:
         med_id = str(lot.get("medicine_id", ""))
         med_name = med_id_to_name.get(med_id, "")
         disp = to_display(med_name)
         if disp and disp in result:
-            result[disp]["remain"] += int(lot.get("qty_remain", 0))
+            result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
             result[disp]["has_lot"] = True
-    
-    # ดึง treatments
+
+    # -----------------------------
+    # 3) คงเหลือ: other_lot
+    # -----------------------------
+    other_lot_res = gas_list("other_lot", 10000)
+    other_lots = other_lot_res.get("data", []) if other_lot_res.get("ok") else []
+
+    for lot in other_lots:
+        item_name = str(lot.get("item_name", "")).strip()
+        disp = to_display(item_name)
+        if not disp:
+            # เผื่อมี lot แต่ master ยังไม่ครบ
+            add_master_name(item_name)
+            disp = to_display(item_name)
+
+        if disp and disp in result:
+            result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
+            result[disp]["has_lot"] = True
+
+    # -----------------------------
+    # 4) ใช้ไป: จาก treatment (อ่าน name / item_name)
+    # -----------------------------
     treat_res = gas_list("treatment", 10000)
     treatments = treat_res.get("data", []) if treat_res.get("ok") else []
-    
+
     for t in treatments:
         visit_date = str(t.get("visit_date", ""))
-        if len(visit_date) >= 7:
-            try:
-                v_year = int(visit_date[:4])
-                v_month = int(visit_date[5:7])
-            except:
+        if len(visit_date) < 7:
+            continue
+        try:
+            v_year = int(visit_date[:4])
+            v_month = int(visit_date[5:7])
+        except:
+            continue
+
+        if v_year != year or v_month != month:
+            continue
+
+        try:
+            items = json.loads(t.get("medicine", "[]"))
+        except:
+            items = []
+
+        if not isinstance(items, list):
+            continue
+
+        for it in items:
+            name = str(it.get("name") or it.get("item_name") or "").strip()
+            qty = int(it.get("qty", 0) or 0)
+            if not name or qty <= 0:
                 continue
-            
-            if v_year == year and v_month == month:
-                try:
-                    items = json.loads(t.get("medicine", "[]"))
-                except:
-                    continue
-                
-                if isinstance(items, list):
-                    for item in items:
-                        name = item.get("name", "")
-                        qty = int(item.get("qty", 0) or 0)
-                        disp = to_display(name)
-                        if disp and disp in result:
-                            result[disp]["used"] += qty
-                            result[disp]["has_used"] = True
-    
+
+            disp = to_display(name)
+            if not disp:
+                add_master_name(name)
+                disp = to_display(name)
+
+            if disp and disp in result:
+                result[disp]["used"] += qty
+                result[disp]["has_used"] = True
+
     return jsonify(result)
 
 @app.route("/api/dashboard/monthly_cost")
 @login_required
 def api_dashboard_monthly_cost():
     year = request.args.get("year", type=int) or datetime.now().year
-    
-    months = [{"month": i, "drug": 0.0, "supply": 0.0, "total": 0.0} for i in range(1, 13)]
-    
-    # ดึง treatment
+
+    months = [{"month": i, "drug": 0.0, "supply": 0.0, "other": 0.0, "total": 0.0} for i in range(1, 13)]
+
     treat_res = gas_list("treatment", 10000)
     treatments = treat_res.get("data", []) if treat_res.get("ok") else []
-    
-    # ดึง lots
+
+    # lot cache: medicine_lot + other_lot
     lot_res = gas_list("medicine_lot", 10000)
-    lots = lot_res.get("data", []) if lot_res.get("ok") else []
-    lot_cache = {str(l.get("id")): l for l in lots}
-    
-    # ดึง medicines
-    med_res = gas_list("medicine", 1000)
+    med_lots = lot_res.get("data", []) if lot_res.get("ok") else []
+    med_lot_cache = {str(l.get("id")): l for l in med_lots}
+
+    other_lot_res = gas_list("other_lot", 10000)
+    other_lots = other_lot_res.get("data", []) if other_lot_res.get("ok") else []
+    other_lot_cache = {str(l.get("id")): l for l in other_lots}
+
+    # medicine cache
+    med_res = gas_list("medicine", 5000)
     meds = med_res.get("data", []) if med_res.get("ok") else []
     med_cache = {str(m.get("id")): m for m in meds}
-    
+
+    def norm_type(v):
+        t = str(v or "").strip().lower()
+        if t in ("other", "other_item", "อื่นๆ", "อื่น", "รายการอื่นๆ"):
+            return "other"
+        if t in ("supply", "supplies", "เวชภัณฑ์"):
+            return "supply"
+        return "medicine"
+
     for t in treatments:
         visit_date = str(t.get("visit_date", ""))
         if len(visit_date) < 7:
             continue
-        
+
         try:
             v_year = int(visit_date[:4])
             v_month = int(visit_date[5:7])
         except:
             continue
-        
+
         if v_year != year or v_month < 1 or v_month > 12:
             continue
-        
+
         try:
             items = json.loads(t.get("medicine", "[]"))
         except:
-            continue
-        
+            items = []
+
         if not isinstance(items, list):
             continue
-        
+
         for it in items:
-            lot_id = str(it.get("lot_id", ""))
+            lot_id = str(it.get("lot_id", "")).strip()
             qty = int(it.get("qty", 0) or 0)
-            
             if not lot_id or qty <= 0:
                 continue
-            
-            lot = lot_cache.get(lot_id)
+
+            item_type = norm_type(it.get("type") or it.get("item_type"))
+
+            # ถ้า type ไม่ชัด ให้เดาจาก lot ว่าอยู่ใน other_lot ไหม
+            if lot_id in other_lot_cache:
+                item_type = "other"
+
+            if item_type == "other":
+                lot = other_lot_cache.get(lot_id)
+                if not lot:
+                    continue
+                price_per_unit = float(lot.get("price_per_unit", 0) or 0)
+                cost = price_per_unit * qty
+                months[v_month - 1]["other"] += cost
+                continue
+
+            # medicine / supply -> ใช้ medicine_lot + medicine(type)
+            lot = med_lot_cache.get(lot_id)
             if not lot:
                 continue
-            
+
             price_per_unit = float(lot.get("price_per_unit", 0) or 0)
-            med_id = str(lot.get("medicine_id", ""))
+            med_id = str(lot.get("medicine_id", "")).strip()
             med = med_cache.get(med_id)
-            mtype = med.get("type") if med else None
-            
+
+            mtype = str((med or {}).get("type", "")).strip().lower()
+            if not mtype:
+                # fallback จาก item_type ที่ JS ส่งมา
+                mtype = "supply" if item_type == "supply" else "medicine"
+
             cost = price_per_unit * qty
-            
             if mtype == "medicine":
                 months[v_month - 1]["drug"] += cost
             elif mtype == "supply":
                 months[v_month - 1]["supply"] += cost
-    
+            else:
+                months[v_month - 1]["drug"] += cost
+
     for obj in months:
-        obj["total"] = obj["drug"] + obj["supply"]
+        obj["total"] = obj["drug"] + obj["supply"] + obj["other"]
         obj["drug"] = round(obj["drug"], 2)
         obj["supply"] = round(obj["supply"], 2)
+        obj["other"] = round(obj["other"], 2)
         obj["total"] = round(obj["total"], 2)
-    
+
     return jsonify({"year": year, "months": months})
+
 
 @app.route("/api/dashboard/top5_month")
 @login_required
@@ -1482,7 +1601,7 @@ def api_dashboard_top5_month():
                 
                 if isinstance(items, list):
                     for item in items:
-                        name = str(item.get("name", "")).strip()
+                        name = str(item.get("name") or item.get("item_name") or "").strip()
                         qty = int(item.get("qty", 0) or 0)
                         if name and qty > 0:
                             counter[name] = counter.get(name, 0) + qty
@@ -1517,7 +1636,8 @@ def api_dashboard_top5_year():
                 
                 if isinstance(items, list):
                     for item in items:
-                        name = str(item.get("name", "")).strip()
+                        
+                        name = str(item.get("name") or item.get("item_name") or "").strip()
                         qty = int(item.get("qty", 0) or 0)
                         if name and qty > 0:
                             counter[name] = counter.get(name, 0) + qty
