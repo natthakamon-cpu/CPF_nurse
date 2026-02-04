@@ -84,33 +84,33 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     }
 
-      /* ✅ เพิ่ม/แก้ให้ top-bar คุมตำแหน่งปุ่ม */
-      .top-bar{
-        display:flex;
-        align-items:center;
-        justify-content:flex-start;
-        margin-bottom: 20px;
-      }
+    /* ✅ เพิ่ม/แก้ให้ top-bar คุมตำแหน่งปุ่ม */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 20px;
+    }
 
-      /* ✅ แก้ปุ่มกลับ: ไม่ใช้ absolute แล้ว */
-      .save-btn{
-        position: static;              /* สำคัญ: เลิก absolute */
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
+    /* ✅ แก้ปุ่มกลับ: ไม่ใช้ absolute แล้ว */
+    .save-btn {
+      position: static;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
 
-        background: #28a745;
-        color: #fff;
-        padding: 10px 18px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-size: 18px;
-        font-weight: 600;
-      }
+      background: #28a745;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 600;
+    }
 
-      .save-btn:hover{
-        opacity: .92;
-      }
+    .save-btn:hover {
+      opacity: .92;
+    }
 
     h2 {
       margin-top: 10px;
@@ -284,25 +284,25 @@
       margin-top: 60px;
     }
 
-        /* คอลัมน์จัดการ: กันขึ้นบรรทัดใหม่ */
+    /* คอลัมน์จัดการ: กันขึ้นบรรทัดใหม่ */
     th.col-actions,
-    td.col-actions{
+    td.col-actions {
       white-space: nowrap;
-      width: 140px;           /* ปรับได้ เช่น 120-160 */
+      width: 140px;
       text-align: center;
     }
 
     /* ห่อไอคอนเป็น flex ให้อยู่แถวเดียว */
-    .action-wrap{
+    .action-wrap {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 10px;
-      flex-wrap: nowrap;      /* ✅ ห้ามขึ้นบรรทัด */
+      flex-wrap: nowrap;
     }
 
     /* ปุ่มไอคอน */
-    .action-btn{
+    .action-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -317,11 +317,16 @@
       font-size: 20px;
     }
 
-    .action-btn:active{ transform: scale(0.96); }
-    .action-btn.danger{ filter: saturate(1.2); }
+    .action-btn:active {
+      transform: scale(0.96);
+    }
 
-    /* ✅ Toast ไม่บล็อก UI (แทน alert) */
-    .toast{
+    .action-btn.danger {
+      filter: saturate(1.2);
+    }
+
+    /* ✅ Toast ไม่บล็อก UI */
+    .toast {
       position: fixed;
       right: 24px;
       bottom: 24px;
@@ -335,20 +340,38 @@
       transform: translateY(10px);
       transition: opacity .18s ease, transform .18s ease;
       pointer-events: none;
-      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .25);
       max-width: min(520px, calc(100vw - 48px));
     }
-    .toast.show{ opacity: 1; transform: translateY(0); }
-    .toast.success{ background:#1b7f3a; }
-    .toast.error{ background:#b3261e; }
-    .toast.info{ background:#2a2a2a; }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success {
+      background: #1b7f3a;
+    }
+
+    .toast.error {
+      background: #b3261e;
+    }
+
+    .toast.info {
+      background: #2a2a2a;
+    }
 
     /* ✅ เอฟเฟกต์ตอนลบ */
-    tr.removing{
+    tr.removing {
       opacity: .45;
       filter: grayscale(1);
     }
 
+    /* ✅ กันผู้ใช้กดซ้ำขณะลบ */
+    .action-btn.disabled {
+      pointer-events: none;
+      opacity: .55;
+    }
   </style>
 </head>
 
@@ -368,7 +391,6 @@
 
   <div class="container">
     <!-- ================= LIST ================= -->
-
     <div id="page-list" class="box page active">
       <!-- ปุ่มกลับเมนู -->
       <div class="top-bar">
@@ -376,7 +398,6 @@
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
         </a>
       </div>
-
 
       <h2>ทะเบียนการรักษา</h2>
       <input type="text" id="searchInput" class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable()">
@@ -406,9 +427,7 @@
 
       <h2>แก้ไขข้อมูลการรักษา</h2>
 
-
       <form id="editForm">
-
         <input type="hidden" id="edit_id">
 
         <label>วันที่เข้ารับการรักษา</label>
@@ -452,12 +471,12 @@
           <option value="supply">เวชภัณฑ์</option>
           <option value="other">อื่นๆ</option>
         </select>
+
         <label>รายละเอียดอาการ</label>
         <textarea name="symptom_detail" id="edit_symptom" rows="3"></textarea>
+
         <label>ยาที่ได้รับ / เวชภัณฑ์</label>
-
         <div class="medicine-group">
-
           <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
             <select id="medicine_select" style="flex:3;">
               <option value="">-- เลือกรายการ --</option>
@@ -477,7 +496,6 @@
           </div>
 
           <table width="100%" id="medicine_table"></table>
-
         </div>
 
         <label>ประวัติแพ้ยา</label>
@@ -485,12 +503,12 @@
           <label><input type="radio" name="allergy" value="0"> ไม่มี</label>
           <label><input type="radio" name="allergy" value="1"> มี</label>
         </div>
+
         <label>รายละเอียดการแพ้ยา</label>
         <textarea name="allergy_detail" id="edit_allergy_detail" rows="2"></textarea>
 
         <!-- ===== ความคิดเห็นของแพทย์ ===== -->
         <div style="grid-column:1 / -1; margin-top:30px;">
-
           <label style="font-size:26px; font-weight:700;">
             ความคิดเห็นของแพทย์
           </label>
@@ -515,7 +533,6 @@
           </label>
 
           <textarea id="edit_doctor_opinion" rows="3" placeholder="ระบุความคิดเห็นของแพทย์"></textarea>
-
         </div>
 
         <div class="edit-actions">
@@ -523,40 +540,39 @@
           <button type="button" class="btn-cancel" onclick="back()">ยกเลิก</button>
           <button type="button" class="btn-back" onclick="back()">⬅ กลับหน้าทะเบียน</button>
         </div>
-
       </form>
     </div>
 
     <script>
+      const symptomLabelMap = {
+        respiratory: "ระบบทางเดินหายใจ",
+        digestive: "ระบบย่อยอาหาร",
+        muscle: "กล้ามเนื้อ",
+        brain: "ระบบสมอง",
+        skin: "ผิวหนัง",
+        medicine: "อายุรกรรม",
+        urinary: "ระบบขับถ่าย",
+        reproductive: "ระบบสืบพันธุ์",
+        eye: "ตา หู ช่องปาก",
+        throat: "คอ",
+        nose: "จมูก",
+        wound: "ทำแผล",
+        work_accident: "อุบัติเหตุในงาน",
+        nonwork_accident: "อุบัติเหตุนอกงาน",
+        supply: "เวชภัณฑ์",
+        other: "อื่นๆ"
+      };
 
-    const symptomLabelMap = {
-      respiratory: "ระบบทางเดินหายใจ",
-      digestive: "ระบบย่อยอาหาร",
-      muscle: "กล้ามเนื้อ",
-      brain: "ระบบสมอง",
-      skin: "ผิวหนัง",
-      medicine: "อายุรกรรม",
-      urinary: "ระบบขับถ่าย",
-      reproductive: "ระบบสืบพันธุ์",
-      eye: "ตา หู ช่องปาก",
-      throat: "คอ",
-      nose: "จมูก",
-      wound: "ทำแผล",
-      work_accident: "อุบัติเหตุในงาน",
-      nonwork_accident: "อุบัติเหตุนอกงาน",
-      supply: "เวชภัณฑ์",
-      other: "อื่นๆ"
-    };
-
-    function symptomLabel(code){
-      if (!code) return "-";
-      return symptomLabelMap[code] || code; // เผื่อมีค่าใหม่
-    }
+      function symptomLabel(code) {
+        if (!code) return "-";
+        return symptomLabelMap[code] || code;
+      }
 
       /* ===============================
          TABLE RENDER (SQLite)
       ================================ */
       let allRecords = [];
+      const deletingIds = new Set(); // ✅ กันกดลบซ้ำ
 
       function safeText(v) {
         return (v === null || v === undefined || v === "") ? "-" : v;
@@ -574,14 +590,15 @@
             return `${name}${lot ? " " + lot : ""}${qty ? " x" + qty : ""}`;
           }).join(", ");
         } catch (e) {
-          return medicineText; // เผื่อมีข้อมูลเก่าไม่ใช่ JSON
+          return medicineText;
         }
       }
 
+      // ✅ เร็วขึ้น: build string ครั้งเดียว ไม่ใช้ innerHTML += ใน loop
       function renderTable(records) {
         const table = document.getElementById('recordTable');
 
-        table.innerHTML = `
+        let html = `
           <tr>
             <th>ลำดับ</th>
             <th>วันที่</th>
@@ -592,16 +609,18 @@
         `;
 
         if (!records || records.length === 0) {
-          table.innerHTML += `
+          html += `
             <tr>
               <td colspan="5" style="color:#999;">ไม่มีข้อมูล</td>
             </tr>
           `;
+          table.innerHTML = html;
           return;
         }
 
-        records.forEach((r, i) => {
-          table.innerHTML += `
+        for (let i = 0; i < records.length; i++) {
+          const r = records[i];
+          html += `
             <tr data-id="${r.id}">
               <td>${i + 1}</td>
               <td>${safeText(r.visit_date)}</td>
@@ -616,21 +635,22 @@
               </td>
             </tr>
           `;
-        });
+        }
 
+        table.innerHTML = html;
       }
-
 
       /* ===============================
          LOAD LIST (SQLite)
       ================================ */
       async function loadRecords() {
-        const res = await fetch("/api/treatment_list");
+        const res = await fetch("/api/treatment_list", { cache: "no-store" });
         allRecords = await res.json();
-        renderTable(allRecords);
+        // ✅ ถ้าผู้ใช้พิมพ์ค้นหาอยู่ ให้ render ตาม filter ทันที
+        renderTable(getFilteredRecordsFromInput());
       }
 
-      function showToast(msg, type="info", ms=1400){
+      function showToast(msg, type = "info", ms = 1400) {
         const el = document.getElementById("toast");
         if (!el) return;
         el.className = `toast ${type}`;
@@ -640,7 +660,7 @@
         window.__toastTimer = setTimeout(() => el.classList.remove("show"), ms);
       }
 
-      function getFilteredRecordsFromInput(){
+      function getFilteredRecordsFromInput() {
         const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
         if (!q) return allRecords;
 
@@ -655,6 +675,14 @@
         renderTable(getFilteredRecordsFromInput());
       }
 
+      // ✅ เร็ว: renumber เฉพาะที่แสดงอยู่ (ไม่ rebuild ทั้งตาราง)
+      function renumberVisibleRows() {
+        const rows = document.querySelectorAll("#recordTable tr[data-id]");
+        rows.forEach((tr, idx) => {
+          const td0 = tr.children[0];
+          if (td0) td0.textContent = String(idx + 1);
+        });
+      }
 
       /* ===============================
          PAGE SWITCH
@@ -669,24 +697,24 @@
          VIEW (SQLite)
       ================================ */
       function viewRecord(id) {
-        fetch(`/api/treatment/${id}`)
+        fetch(`/api/treatment/${id}`, { cache: "no-store" })
           .then(res => res.json())
           .then(r => {
             if (!r.success) return alert("ไม่พบข้อมูล");
             const d = r.data;
 
             document.getElementById("viewBox").innerHTML = `
-        <p><b>วันที่เข้ารับการรักษา:</b> ${safeText(d.visit_date)}</p>
-        <p><b>ชื่อ - นามสกุล ผู้ป่วย:</b> ${safeText(d.patient_name)}</p>
-        <p><b>แผนก:</b> ${safeText(d.department)}</p>
-        <p><b>กลุ่มอาการ:</b> ${symptomLabel(d.symptom_group)}</p>
-        <p><b>รายละเอียดอาการ:</b> ${safeText(d.symptom_detail)}</p>
-        <p><b>ยาที่ได้รับ / เวชภัณฑ์:</b> ${formatMeds(d.medicine)}</p>
-        <p><b>ประวัติแพ้ยา:</b> ${d.allergy == 1 ? "มี" : "ไม่มี"}</p>
-        <p><b>รายละเอียดการแพ้ยา:</b> ${safeText(d.allergy_detail)}</p>
-        <p><b>ความคิดเห็นของแพทย์:</b> ${d.occupational_disease == 1 ? "เข้าข่าย" : "ไม่เข้าข่าย"}</p>
-        <p><b>รายละเอียดความคิดเห็นของแพทย์:</b> ${safeText(d.doctor_opinion)}</p>
-      `;
+              <p><b>วันที่เข้ารับการรักษา:</b> ${safeText(d.visit_date)}</p>
+              <p><b>ชื่อ - นามสกุล ผู้ป่วย:</b> ${safeText(d.patient_name)}</p>
+              <p><b>แผนก:</b> ${safeText(d.department)}</p>
+              <p><b>กลุ่มอาการ:</b> ${symptomLabel(d.symptom_group)}</p>
+              <p><b>รายละเอียดอาการ:</b> ${safeText(d.symptom_detail)}</p>
+              <p><b>ยาที่ได้รับ / เวชภัณฑ์:</b> ${formatMeds(d.medicine)}</p>
+              <p><b>ประวัติแพ้ยา:</b> ${d.allergy == 1 ? "มี" : "ไม่มี"}</p>
+              <p><b>รายละเอียดการแพ้ยา:</b> ${safeText(d.allergy_detail)}</p>
+              <p><b>ความคิดเห็นของแพทย์:</b> ${d.occupational_disease == 1 ? "เข้าข่าย" : "ไม่เข้าข่าย"}</p>
+              <p><b>รายละเอียดความคิดเห็นของแพทย์:</b> ${safeText(d.doctor_opinion)}</p>
+            `;
             switchPage("page-view");
           });
       }
@@ -708,20 +736,20 @@
       function renderMedicineTable() {
         const table = document.getElementById("medicine_table");
         table.innerHTML = `
-    <tr>
-      <th>ยา</th><th>Lot</th><th>จำนวน</th><th>ราคา</th><th>ลบ</th>
-    </tr>
-  `;
+          <tr>
+            <th>ยา</th><th>Lot</th><th>จำนวน</th><th>ราคา</th><th>ลบ</th>
+          </tr>
+        `;
         editMedicines.forEach((m, i) => {
           table.innerHTML += `
-      <tr>
-        <td>${safeText(m.name)}</td>
-        <td>${safeText(m.lot)}</td>
-        <td>${safeText(m.qty)}</td>
-        <td>${safeText(m.price)}</td>
-        <td><button type="button" onclick="removeMedicine(${i})">🗑️</button></td>
-      </tr>
-    `;
+            <tr>
+              <td>${safeText(m.name)}</td>
+              <td>${safeText(m.lot)}</td>
+              <td>${safeText(m.qty)}</td>
+              <td>${safeText(m.price)}</td>
+              <td><button type="button" onclick="removeMedicine(${i})">🗑️</button></td>
+            </tr>
+          `;
         });
       }
       function removeMedicine(i) {
@@ -730,7 +758,7 @@
       }
 
       function editRecord(id) {
-        fetch(`/api/treatment/${id}`)
+        fetch(`/api/treatment/${id}`, { cache: "no-store" })
           .then(res => res.json())
           .then(r => {
             if (!r.success) {
@@ -767,19 +795,79 @@
       }
 
       /* ===============================
-         DELETE (SQLite)
+         DELETE (SQLite)  ✅ เร็วขึ้นมาก
       ================================ */
-      function deleteRecord(id) {
+      async function deleteRecord(id) {
+        if (deletingIds.has(id)) return; // กันกดซ้ำ
         if (!confirm("ยืนยันการลบข้อมูลนี้?")) return;
 
-        fetch(`/api/treatment/delete/${id}`, { method: "DELETE" })
-          .then(res => res.json())
-          .then(async r => {
-            if (!r.success) { alert("ลบไม่สำเร็จ"); return; }
-            alert("✅ ลบแล้ว");
-            await loadRecords();
-            switchPage("page-list");
+        deletingIds.add(id);
+
+        // --- สำรองข้อมูลไว้เผื่อ rollback ---
+        const backupAll = allRecords.slice();
+        const row = document.querySelector(`#recordTable tr[data-id="${id}"]`);
+        const parent = row ? row.parentNode : null;
+        const nextEl = row ? row.nextElementSibling : null;
+        const rowHTML = row ? row.outerHTML : null;
+
+        // --- ทำ UI ให้ “หายทันที” ---
+        if (row) {
+          row.classList.add("removing");
+          const delBtn = row.querySelector(".action-btn.danger");
+          if (delBtn) {
+            delBtn.classList.add("disabled");
+            delBtn.textContent = "⏳";
+            delBtn.title = "กำลังลบ...";
+          }
+          // ลบออกจาก DOM ทันที (ไม่ rebuild ทั้งตาราง)
+          row.remove();
+          renumberVisibleRows();
+        }
+
+        // อัปเดต state ใน memory ทันที
+        allRecords = allRecords.filter(r => Number(r.id) !== Number(id));
+
+        showToast("กำลังลบ...", "info", 900);
+
+        // --- ยิง API ลบจริง (ไม่รอ UI) ---
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 12000); // 12s กันค้าง
+
+        try {
+          const res = await fetch(`/api/treatment/delete/${id}`, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" },
+            cache: "no-store",
+            keepalive: true,
+            signal: controller.signal
           });
+          clearTimeout(t);
+
+          const r = await res.json().catch(() => ({}));
+          if (!res.ok || !r.success) throw new Error(r?.error || "delete failed");
+
+          showToast("✅ ลบแล้ว", "success", 1400);
+        } catch (err) {
+          clearTimeout(t);
+          console.error(err);
+
+          // rollback state
+          allRecords = backupAll;
+
+          // rollback DOM เฉพาะแถวเดิม (ถ้ามี)
+          if (parent && rowHTML) {
+            if (nextEl) nextEl.insertAdjacentHTML("beforebegin", rowHTML);
+            else parent.insertAdjacentHTML("beforeend", rowHTML);
+            renumberVisibleRows();
+          } else {
+            // fallback: re-render เฉพาะกรณีจำเป็น
+            renderTable(getFilteredRecordsFromInput());
+          }
+
+          showToast("❌ ลบไม่สำเร็จ (คืนข้อมูลแล้ว)", "error", 2200);
+        } finally {
+          deletingIds.delete(id);
+        }
       }
 
       /* ===============================
@@ -797,7 +885,6 @@
       const lotSelect = document.getElementById("lot_select");
       const qtyInput = document.getElementById("qty_input");
 
-      /* กลุ่มอาการ + รายการยา (เหมือนเดิมของคุณ) */
       const medicineData = {
         respiratory: ['Amoxy', 'Bisolvon', 'Mybacin', 'Loratadine', 'Zyetec', 'M.tusis'],
         digestive: ['Air-x', 'K milk120cc', 'Buscopan', 'Diasgest', 'M.car', 'ORS', 'Paracetamol(500)', 'Motilium', 'K-milk', 'ยาหอม', 'CA-R-Bon'],
@@ -841,13 +928,12 @@
         });
       });
 
-      /* ✅ แก้ตรงนี้: โหลด LOT ด้วย medicine_id (เหมือน form) */
       medSelect.addEventListener("change", async () => {
         lotSelect.innerHTML = '<option value="">Lot</option>';
         if (!medSelect.value) return;
 
         try {
-          const resId = await fetch(`/api/medicine_id?name=${encodeURIComponent(medSelect.value)}`);
+          const resId = await fetch(`/api/medicine_id?name=${encodeURIComponent(medSelect.value)}`, { cache: "no-store" });
           const dataId = await resId.json();
           const medId = dataId.medicine_id;
 
@@ -856,7 +942,7 @@
             return;
           }
 
-          const resLots = await fetch(`/api/medicine_lots?medicine_id=${medId}`);
+          const resLots = await fetch(`/api/medicine_lots?medicine_id=${medId}`, { cache: "no-store" });
           const dataLots = await resLots.json();
 
           (dataLots.lots || []).forEach(lot => {
@@ -906,6 +992,7 @@
         fetch(`/api/treatment/edit/${edit_id.value}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          cache: "no-store",
           body: JSON.stringify({
             visit_date: edit_date.value,
             patient_name: edit_name.value,
@@ -930,15 +1017,14 @@
             switchPage("page-list");
           });
       });
-
     </script>
 
     <!-- ===== FOOTER ===== -->
     <div class="footer">
       © 2026 Safety Officer, CPF Khon Kaen Feedmill
     </div>
-    <div id="toast" class="toast"></div>
 
+    <div id="toast" class="toast"></div>
 </body>
 
 </html>
