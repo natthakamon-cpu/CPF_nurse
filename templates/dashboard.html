@@ -343,6 +343,30 @@
       .dashboard-row{ flex-direction: column; }
     }
 
+    /* ================== COST SIZE FIX ================== */
+    #cost .dashboard-row{
+      align-items: stretch;           /* ✅ ทำให้คอลัมน์ซ้าย-ขวาสูงเท่ากัน */
+    }
+
+    #cost .dashboard-left,
+    #cost .dashboard-right{
+      flex: 1 1 0;                    /* ✅ ทำให้กว้างเท่ากัน */
+      min-width: 0;
+    }
+
+    #cost .graph-box{
+      height: 420px;                  /* ✅ ทั้งซ้ายและขวาสูงเท่ากัน */
+    }
+
+    #cost .cost-chart-wrap{
+      height: 100%;
+    }
+
+    #cost .cost-chart-wrap canvas{
+      width: 100% !important;
+      height: 100% !important;        /* ✅ ให้กราฟเต็มกรอบจริง */
+    }
+
   </style>
 </head>
 
@@ -479,8 +503,10 @@
 
         <!-- ขวา -->
         <div class="dashboard-left">
-          <div class="graph-box" style="height:420px;">
-            <canvas id="monthlyCostChart"></canvas>
+          <div class="graph-box">
+            <div class="chart-wrap cost-chart-wrap">
+              <canvas id="monthlyCostChart"></canvas>
+            </div>
           </div>
         </div>
 
@@ -601,11 +627,12 @@
           datasets: [
             { label: "ค่ายา", data: drugData, backgroundColor: "#90CAF9" },
             { label: "ค่าเวชภัณฑ์", data: supplyData, backgroundColor: "#e38cf3" },
-            { label: "ค่าอื่นๆ", data: otherData, backgroundColor: "#CE93D8" }
+            { label: "ค่าอื่นๆ", data: otherData, backgroundColor: "#69fff0" }
           ]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: { legend: { display: true } }
         }
       });
