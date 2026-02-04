@@ -471,6 +471,9 @@
             <div id="sumDrug" style="font-size:22px;font-weight:700;color:#388e3c;">0 บาท</div>
             <h4>📦 ค่าเวชภัณฑ์รวม</h4>
             <div id="sumSupply" style="font-size:22px;font-weight:700;color:#1976d2;">0 บาท</div>
+            <h4>🧰 ค่าอื่นๆรวม</h4>
+            <div id="sumOther" style="font-size:22px;font-weight:700;color:#6a1b9a;">0 บาท</div>
+
           </div>
         </div>
 
@@ -569,15 +572,21 @@
     }
 
     function updateCostSummary(monthIndex0) { // 0-11
-      const m = (costCache && costCache[monthIndex0]) ? costCache[monthIndex0] : { drug: 0, supply: 0, total: 0 };
-      document.getElementById("sumDrug").innerText = fmtBaht(m.drug);
+      const m = (costCache && costCache[monthIndex0])
+        ? costCache[monthIndex0]
+        : { drug: 0, supply: 0, other: 0, total: 0 };
+
+      document.getElementById("sumDrug").innerText   = fmtBaht(m.drug);
       document.getElementById("sumSupply").innerText = fmtBaht(m.supply);
-      document.getElementById("sumTotal").innerText = fmtBaht(m.total);
+      document.getElementById("sumOther").innerText  = fmtBaht(m.other);
+      document.getElementById("sumTotal").innerText  = fmtBaht(m.total);
     }
+
 
     function renderCostChart(){
       const drugData   = (costCache||[]).map(x => x.drug || 0);
       const supplyData = (costCache||[]).map(x => x.supply || 0);
+      const otherData  = (costCache||[]).map(x => x.other || 0);
 
       const ctx = document.getElementById("monthlyCostChart");
 
@@ -590,18 +599,9 @@
         data: {
           labels: monthLabels,
           datasets: [
-            {
-              label: "ค่ายา",
-              data: drugData,
-              backgroundColor: "#90CAF9"
-            },
-            {
-              label: "ค่าเวชภัณฑ์",
-              data: supplyData,
-              backgroundColor: "#e38cf3"   // ✅ สีม่วง
-              // borderColor: "#d096e9"     // (ถ้าอยากให้ขอบม่วงเข้ม)
-              // borderWidth: 1
-            }
+            { label: "ค่ายา", data: drugData, backgroundColor: "#90CAF9" },
+            { label: "ค่าเวชภัณฑ์", data: supplyData, backgroundColor: "#e38cf3" },
+            { label: "ค่าอื่นๆ", data: otherData, backgroundColor: "#CE93D8" }
           ]
         },
         options: {
@@ -1010,132 +1010,71 @@
 
 
 
-    /* ================== DRUG & SUPPLY TABLE ================== */
+  /* ================== DRUG & SUPPLY TABLE (DYNAMIC MASTER) ================== */
 
-    /* ===== รายชื่อยา (ไม่เอาคำอธิบาย) ===== */
-    const drugs = [
-      "0.1%TA Cream",
-      "Acyclovir",
-      "Air-X",
-      "Amoxy",
-      "Antacid",
-      "B1,6,12",
-      "Balm",
-      "Bisolvon",
-      "Brufen(400)",
-      "Buscopan",
-      "CA-R-Bon",
-      "Calamine lotion",
-      "CPM",
-      "Diasgest",
-      "Dimen",
-      "Hista oph",
-      "Ibuprofen",
-      "K milk120cc",
-      "K-milk",
-      "Kenalog",
-      "Loratadine",
-      "Motilium",
-      "M.car",
-      "M.tusis",
-      "Mybacin",
-      "Mycozol",
-      "Mydoclam",
-      "Norflox",
-      "Norgesic",
-      "Ointment",
-      "Op Sar",
-      "ORS",
-      "Paracetamol(500)",
-      "Plaster",
-      "Ponstan(500)",
-      "Silver cream",
-      "Zyetec",
-      "ยาหอม",
-      "ไม้พันสำลี"
-    ];
+  let allItems = []; // ✅ รายชื่อทั้งหมด (ยา + เวชภัณฑ์ + อื่นๆ) ดึงจาก API
 
-    /* ===== รายชื่อเวชภัณฑ์ ===== */
-    const supplies = [
-      "0.9%NSS",
-      "70%Alcohol",
-      "Amora",
-      "Betadine",
-      "EB:2\"",
-      "EB:3\"",
-      "Eyepad",
-      "Gouze",
-      "Grove Dispose",
-      "Mask",
-      "Sofatulle",
-      "Transpore",
-      "กรรไกร",
-      "ก้วยาน้ำ/แก้วยาเม็ด",
-      "เข็มกลัด",
-      "ชุดตรวจสารเสพติดHTC",
-      "ชุดตรวจสารเสพติดMET",
-      "เซ็ตทำแผล D/S",
-      "ถ้วยล้างตา",
-      "ถุงยางอนามัย",
-      "ปรอทวัดไข้",
-      "ปากคืบปลายทู่",
-      "ผ้าสามเหลี่ยม",
-      "สาย02 Canula",
-      "สาย02 Mask with Bag",
-      "สายยางห้ามเลือด",
-      "หลอดหยดยา",
-      "ไม้กดลิ้น",
-      "ไม้พันสำลี"
-    ];
+  function norm(s) {
+    if (!s) return "";
+    s = String(s).trim().toLowerCase();
+    s = s.replace(/[–—−]/g, "-");  // dash หลายแบบ -> "-"
+    s = s.replace(/\s+/g, " ");    // ช่องว่างซ้อน -> 1 ช่อง
+    return s;
+  }
 
-    /* ===== รวม + เรียงตามพยัญชนะ ===== */
-    const allItems = [...new Set([...drugs, ...supplies])].sort();
+  async function loadMasterItems() {
+    try {
+      const r = await fetch("/api/dashboard/item_master");
+      const j = await r.json();
+      allItems = (j.items || []).filter(Boolean);
+      // เรียงชื่อให้อ่านง่าย
+      allItems.sort((a, b) => a.localeCompare(b, "th"));
+    } catch (e) {
+      console.error("โหลด master items ล้มเหลว:", e);
+      allItems = [];
+    }
+  }
 
-    function norm(s) {
-      if (!s) return "";
-      s = String(s).trim().toLowerCase();
-      s = s.replace(/[–—−]/g, "-");  // dash หลายแบบ -> "-"
-      s = s.replace(/\s+/g, " ");    // ช่องว่างซ้อน -> 1 ช่อง
-      return s;
+  async function loadDrugTable(month = currentMonth, year = currentYear) {
+    // ✅ ถ้ายังไม่มี master list -> โหลดก่อน
+    if (!allItems || allItems.length === 0) {
+      await loadMasterItems();
     }
 
-    /* ===== แสดงในตาราง ===== */
-    /* ===== แสดงในตาราง (คงรายการเดิมทั้งหมด) ===== */
-    async function loadDrugTable(month = currentMonth, year = currentYear) {
-      const tbody = document.getElementById("drugTable");
-      tbody.innerHTML = "";
+    const tbody = document.getElementById("drugTable");
+    tbody.innerHTML = "";
 
-      let data = {};
-      try {
-        const res = await fetch(`/api/dashboard/drug_summary?year=${year}&month=${month}`);
-        data = await res.json();
-      } catch (e) {
-        console.error("โหลดข้อมูลตารางยาไม่ได้:", e);
-        data = {};
-      }
-
-      const dataNorm = {};
-      Object.keys(data || {}).forEach(k => {
-        dataNorm[norm(k)] = data[k];
-      });
-
-      allItems.forEach(name => {
-        const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
-
-        const usedText = item.has_used ? item.used : "-";
-        const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-      <td>${name}</td>
-      <td style="text-align:center;">${usedText}</td>
-      <td style="text-align:center;">${remainText}</td>
-    `;
-        tbody.appendChild(tr);
-      });
+    let data = {};
+    try {
+      const res = await fetch(`/api/dashboard/drug_summary?year=${year}&month=${month}`);
+      data = await res.json();
+    } catch (e) {
+      console.error("โหลดข้อมูลตารางยาไม่ได้:", e);
+      data = {};
     }
 
+    const dataNorm = {};
+    Object.keys(data || {}).forEach(k => {
+      dataNorm[norm(k)] = data[k];
+    });
 
+    allItems.forEach(name => {
+      const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
+
+      const usedText = item.has_used ? item.used : "-";
+      const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td style="text-align:center;">${usedText}</td>
+        <td style="text-align:center;">${remainText}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+    /* ================== TOP5 ================== */
     let top5MonthChart = null;
     let yearTop5Chart = null;
 
@@ -1258,11 +1197,13 @@
 
 
     // ✅ init ตอนโหลดหน้า dashboard
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", async function () {
       setupScroll("top5");
       currentMonth = 1;
-      loadDrugTable(currentMonth, currentYear);  // ✅ เพิ่มบรรทัดนี้
+      await loadMasterItems();                 // ✅ โหลดรายชื่อใหม่ทั้งหมดก่อน
+      await loadDrugTable(currentMonth, currentYear);
     });
+
 
   </script>
 
