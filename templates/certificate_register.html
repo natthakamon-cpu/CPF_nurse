@@ -319,25 +319,44 @@
 
       /* ================= DELETE ================= */
       async function deleteRecord(id) {
-        if (confirm("ยืนยันการลบข้อมูลนี้?")) {
-          try {
-            const response = await fetch(`/api/medical_certificate/delete/${id}`, {
-              method: "DELETE"
-            });
-            const result = await response.json();
+        if (!confirm("ยืนยันการลบข้อมูลนี้?")) return;
 
-            if (result.success) {
-              alert("✔ ลบข้อมูลเรียบร้อย");
-              window.location.reload();  // รีโหลดหน้าเพื่อดึงข้อมูลใหม่
-            } else {
-              alert("❌ ลบไม่สำเร็จ: " + (result.message || "Unknown error"));
-            }
-          } catch (error) {
-            console.error("Error deleting certificate:", error);
-            alert("❌ เกิดข้อผิดพลาดในการลบ: " + error.message);
+        // ✅ เก็บสำรองไว้ เผื่อลบจริงไม่สำเร็จจะคืนค่า
+        const backup = allRecords.slice();
+
+        // ✅ ทำให้ UI ลบทันที (Optimistic UI)
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) row.classList.add("removing");
+
+        allRecords = allRecords.filter(r => Number(r.id) !== Number(id));
+        renderTable(getFilteredRecordsFromInput());
+        showToast("กำลังลบ...", "info", 900);
+
+        try {
+          const res = await fetch(`/api/treatment/delete/${id}`, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
+          });
+
+          const r = await res.json();
+          if (!res.ok || !r.success) {
+            throw new Error(r?.error || "delete failed");
           }
+
+          // ✅ สำเร็จ: ไม่ต้องโหลดใหม่ทั้งตาราง
+          showToast("✅ ลบแล้ว", "success", 1400);
+          // อยู่หน้า list ต่อเลย ไม่ต้อง switchPage/alert
+        } catch (err) {
+          console.error(err);
+
+          // ❌ ไม่สำเร็จ: คืนค่ากลับ
+          allRecords = backup;
+          renderTable(getFilteredRecordsFromInput());
+          showToast("❌ ลบไม่สำเร็จ (คืนข้อมูลกลับแล้ว)", "error", 2200);
         }
       }
+
 
       /* ================= SEARCH ================= */
       function filterTable(q) {
