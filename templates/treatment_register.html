@@ -320,6 +320,35 @@
     .action-btn:active{ transform: scale(0.96); }
     .action-btn.danger{ filter: saturate(1.2); }
 
+    /* ✅ Toast ไม่บล็อก UI (แทน alert) */
+    .toast{
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 9999;
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+      max-width: min(520px, calc(100vw - 48px));
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
+    .toast.success{ background:#1b7f3a; }
+    .toast.error{ background:#b3261e; }
+    .toast.info{ background:#2a2a2a; }
+
+    /* ✅ เอฟเฟกต์ตอนลบ */
+    tr.removing{
+      opacity: .45;
+      filter: grayscale(1);
+    }
+
   </style>
 </head>
 
@@ -573,7 +602,7 @@
 
         records.forEach((r, i) => {
           table.innerHTML += `
-            <tr>
+            <tr data-id="${r.id}">
               <td>${i + 1}</td>
               <td>${safeText(r.visit_date)}</td>
               <td>${safeText(r.patient_name)}</td>
@@ -588,6 +617,7 @@
             </tr>
           `;
         });
+
       }
 
 
@@ -600,15 +630,31 @@
         renderTable(allRecords);
       }
 
-      function filterTable() {
-        const q = (document.getElementById("searchInput").value || "").toLowerCase();
-        const filtered = allRecords.filter(r =>
+      function showToast(msg, type="info", ms=1400){
+        const el = document.getElementById("toast");
+        if (!el) return;
+        el.className = `toast ${type}`;
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(window.__toastTimer);
+        window.__toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+      }
+
+      function getFilteredRecordsFromInput(){
+        const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+        if (!q) return allRecords;
+
+        return allRecords.filter(r =>
           (r.patient_name || "").toLowerCase().includes(q) ||
           (r.visit_date || "").includes(q) ||
           formatMeds(r.medicine).toLowerCase().includes(q)
         );
-        renderTable(filtered);
       }
+
+      function filterTable() {
+        renderTable(getFilteredRecordsFromInput());
+      }
+
 
       /* ===============================
          PAGE SWITCH
@@ -885,18 +931,14 @@
           });
       });
 
-      /* ===============================
-         INIT
-      ================================ */
-      document.addEventListener("DOMContentLoaded", () => {
-        loadRecords(); // ✅ โหลดทะเบียนทันที
-      });
     </script>
 
     <!-- ===== FOOTER ===== -->
     <div class="footer">
       © 2026 Safety Officer, CPF Khon Kaen Feedmill
     </div>
+    <div id="toast" class="toast"></div>
+
 </body>
 
 </html>
