@@ -367,33 +367,36 @@
       height: 100% !important;        /* ✅ ให้กราฟเต็มกรอบจริง */
     }
 
-    /* ================== COST TEXT OVERFLOW FIX ================== */
+    /* ================== COST TEXT SPACING (พอดี ไม่ล้น) ================== */
 
-    /* ทำให้กล่องซ้าย-ขวาสูงเท่ากันเหมือนเดิม */
-    #cost .graph-box{
-      height: 420px;
-    }
-
-    /* ลดช่องว่าง + ลดขนาดหัวข้อในกรอบสรุปฝั่งซ้าย */
+    /* กล่องฝั่งซ้าย (สรุป) */
     #cost .dashboard-right .graph-box{
-      padding: 12px;           /* ลดจากเดิม 15px */
-      overflow-y: auto;        /* กันล้น: ถ้ายังเยอะจะเลื่อนในกรอบได้ */
+      padding: 14px;            /* เพิ่มนิดนึงให้หายอึดอัด */
+      overflow-y: auto;         /* กันล้นไว้ (ถ้าเดือนไหนตัวเลขยาวมาก) */
     }
 
+    /* หัวข้อแต่ละบรรทัด (ไม่ให้ชิดกัน) */
     #cost .dashboard-right .graph-box h4{
       font-size: 18px;
-      margin: 6px 0 4px;       /* สำคัญ: ลด margin ของ h4 ไม่ให้กินพื้นที่ */
-      line-height: 1.2;
+      margin: 12px 0 6px;       /* ✅ เพิ่มระยะห่างบน-ล่าง */
+      line-height: 1.35;        /* ✅ อ่านสบายขึ้น */
     }
 
+    /* ระยะห่าง “ค่าตัวเลข” ใต้หัวข้อ (ใช้ selector ช่วย โดยไม่ต้องแก้ HTML) */
+    #cost .dashboard-right .graph-box h4 + div{
+      margin-top: 2px;
+      margin-bottom: 14px;      /* ✅ เว้นระยะระหว่างบล็อก */
+    }
+
+    /* เส้นคั่น */
     #cost .dashboard-right .graph-box hr{
-      margin: 10px 0 !important;  /* ลดระยะ hr */
+      margin: 14px 0 !important;
     }
 
-    /* บังคับลดขนาดตัวเลข (override inline style ด้วย !important) */
+    /* ตัวเลข: บังคับระยะห่าง + กันชิด */
     #cost #sumTotal{
       font-size: 24px !important;
-      margin: 6px 0 10px;
+      margin: 6px 0 14px !important;
       display: block;
     }
 
@@ -401,9 +404,10 @@
     #cost #sumSupply,
     #cost #sumOther{
       font-size: 20px !important;
-      margin: 4px 0 8px;
+      margin: 4px 0 14px !important;
       display: block;
     }
+
 
   </style>
 </head>
