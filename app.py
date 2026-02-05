@@ -228,6 +228,21 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrap
 
+def catalog_required(f):
+    """
+    อนุญาตเฉพาะผู้ที่ล็อกอินและมี role = admin หรือ user
+    (ตาม requirement ใหม่: user ทั่วไปก็เพิ่ม/ลบได้)
+    """
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if "username" not in session:
+            return redirect("/")
+        role = str(session.get("role", "")).strip().lower()
+        if role not in ("admin", "user"):
+            return redirect("/menu")
+        return f(*args, **kwargs)
+    return wrap
+
 # ============================================
 # TEST ROUTES
 # ============================================
@@ -379,7 +394,7 @@ def medicine_group():
     return render_template("medicine_group.html", groups=SYMPTOM_GROUPS)
 
 @app.route("/supply/add", methods=["POST"])
-@admin_required
+@catalog_required
 def supply_add():
     name = norm_text(request.form.get("name", ""))
 
@@ -489,7 +504,7 @@ def debug_other_item():
 
 
 @app.route("/other/item/<int:item_id>/delete", methods=["POST"])
-@admin_required
+@catalog_required
 def other_delete_item(item_id):
     # 1) หา item ก่อน เพื่อรู้ชื่อ (ไว้ลบ lot ที่ผูกด้วย)
     item_res = gas_get("other_item", item_id)
@@ -510,7 +525,7 @@ def other_delete_item(item_id):
     return redirect("/medicine/list/" + quote("อื่นๆ"))
 
 @app.route("/medicine/<int:med_id>/delete", methods=["POST"])
-@admin_required
+@catalog_required
 def medicine_delete(med_id):
     # ดึงข้อมูลยา/เวชภัณฑ์ เพื่อรู้ type และ group
     med_res = gas_get("medicine", med_id)
@@ -780,6 +795,7 @@ def record():
 
 
 @app.route("/medicine/add", methods=["POST"])
+@catalog_required
 def medicine_add():
     group = norm_text(request.form.get("group", ""))
     name = norm_text(request.form.get("name", ""))
