@@ -192,7 +192,7 @@
       <a href="/medicine/group" class="back-menu-btn">⬅ ย้อนกลับ</a>
     </div>
 
-    {% if session.get('role') == 'admin' %}
+    {% if (session.get('role','')|lower) in ['admin','user'] %}
     <button type="button" class="add-btn" id="openAdd">
       <i class="fa-solid fa-plus"></i> เพิ่มชื่อยา/เวชภัณฑ์
     </button>
@@ -205,7 +205,7 @@
         <div class="med-card">
           <a class="med-box" href="/medicine/{{ m.id }}">{{ m.name }}</a>
 
-          {% if session.get("role") == "admin" %}
+          {% if (session.get("role","")|lower) in ["admin","user"] %}
           <form class="del-form" method="post" action="/medicine/{{ m.id }}/delete"
                 onsubmit="return confirm('ยืนยันลบ: {{ m.name }} ?\n(ระบบจะลบ LOT ของรายการนี้ด้วย)');">
             <button type="submit" class="del-btn" title="ลบรายการ">
@@ -213,6 +213,7 @@
             </button>
           </form>
           {% endif %}
+
         </div>
       {% endfor %}
     </div>
