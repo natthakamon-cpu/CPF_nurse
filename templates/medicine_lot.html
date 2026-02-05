@@ -221,6 +221,30 @@
       color: #555;
       margin-top: 60px;
     }
+
+    button[disabled] { opacity: .7; cursor: not-allowed; }
+
+    .toast{
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 9999;
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
+    .toast.success{ background:#1b7f3a; }
+    .toast.error{ background:#b3261e; }
+    .toast.info{ background:#2a2a2a; }
+
   </style>
 </head>
 
@@ -258,7 +282,8 @@
     <div class="section-title">➕ เพิ่ม Lot ยา / เวชภัณฑ์</div>
 
     <div class="add-lot-box">
-      <form method="post" action="/medicine/{{ med.id }}/add_lot">
+      <form id="addLotForm" method="post" action="/medicine/{{ med.id }}/add_lot">
+        <input type="hidden" name="item_name" value="{{ med.name }}">
         <label>วันหมดอายุ</label>
         <input type="date" name="expire_date" required>
 
@@ -268,38 +293,135 @@
         <label>ราคา / Lot (บาท)</label>
         <input type="number" name="price" min="1" required>
 
-        <button type="submit">💾 บันทึก Lot</button>
+        <button id="saveLotBtn" type="submit">💾 บันทึก Lot</button>
       </form>
+
     </div>
 
     <!-- ===== แสดง LOT ===== -->
     <hr>
     <div class="section-title">📦 Lot ที่มีอยู่</div>
 
-    {% if lots %}
-    {% for lot in lots %}
-    <div class="lot-box">
-      <div class="lot-header">{{ lot.lot_name }}</div>
-      <div>วันหมดอายุ: {{ lot.expire_date }}</div>
-      <div>จำนวนทั้งหมด: {{ lot.qty_total }}</div>
-      <div>คงเหลือ: {{ lot.qty_remain }}</div>
-      <div>ราคา / Lot: {{ "%.2f"|format(lot.price_per_lot) }} บาท</div>
-      <div>ราคา / หน่วย: {{ "%.2f"|format(lot.price_per_unit) }} บาท</div>
+    <div id="lotsContainer">
+      {% if lots %}
+        {% for lot in lots %}
+        <div class="lot-box" id="lot-{{ lot.id }}">
+          <div class="lot-header">{{ lot.lot_name }}</div>
+          <div>วันหมดอายุ: <span class="js-expire">{{ lot.expire_date }}</span></div>
+          <div>จำนวนทั้งหมด: <span class="js-qty-total">{{ lot.qty_total }}</span></div>
+          <div>คงเหลือ: <span class="js-qty-remain">{{ lot.qty_remain }}</span></div>
+          <div>ราคา / Lot: <span class="js-price-lot">{{ "%.2f"|format(lot.price_per_lot) }}</span> บาท</div>
+          <div>ราคา / หน่วย: <span class="js-price-unit">{{ "%.2f"|format(lot.price_per_unit) }}</span> บาท</div>
 
-      <form method="post" action="/lot/{{ lot.id }}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
-        <button class="delete-btn">🗑 ลบ Lot</button>
-      </form>
+          <form method="post" action="/lot/{{ lot.id }}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+            <button class="delete-btn">🗑 ลบ Lot</button>
+          </form>
+        </div>
+        {% endfor %}
+      {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <p style="color:#999;">ยังไม่มี Lot ของยานี้</p>
-    {% endif %}
+
+    <p id="noLotText" style="color:#999; {% if lots %}display:none;{% endif %}">
+      ยังไม่มี Lot ของยานี้
+    </p>
+
 
   </div>
   <!-- ===== FOOTER ===== -->
   <div class="footer">
     © 2026 Safety Officer, CPF Khon Kaen Feedmill
   </div>
+
+  <div id="lotToast" class="toast"></div>
+
+  <script>
+  (() => {
+    const form = document.getElementById("addLotForm");
+    const btn = document.getElementById("saveLotBtn");
+    const container = document.getElementById("lotsContainer");
+    const noLotText = document.getElementById("noLotText");
+    const toastEl = document.getElementById("lotToast");
+    if (!form || !btn || !container) return;
+
+    function fmt2(n){
+      const x = Number(n || 0);
+      return x.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function toast(msg, type="info", ms=1400){
+      if (!toastEl) return;
+      toastEl.className = `toast ${type}`;
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(window.__lotToastTimer);
+      window.__lotToastTimer = setTimeout(() => toastEl.classList.remove("show"), ms);
+    }
+
+    function renderCard(lot){
+      const id = lot.id ?? "";
+      return `
+        <div class="lot-box" id="lot-${id}">
+          <div class="lot-header">${lot.lot_name || "-"}</div>
+          <div>วันหมดอายุ: <span class="js-expire">${lot.expire_date || "-"}</span></div>
+          <div>จำนวนทั้งหมด: <span class="js-qty-total">${lot.qty_total ?? 0}</span></div>
+          <div>คงเหลือ: <span class="js-qty-remain">${lot.qty_remain ?? 0}</span></div>
+          <div>ราคา / Lot: <span class="js-price-lot">${fmt2(lot.price_per_lot)}</span> บาท</div>
+          <div>ราคา / หน่วย: <span class="js-price-unit">${fmt2(lot.price_per_unit)}</span> บาท</div>
+          <form method="post" action="/lot/${id}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+            <button class="delete-btn">🗑 ลบ Lot</button>
+          </form>
+        </div>
+      `;
+    }
+
+    function upsertLot(lot){
+      if (noLotText) noLotText.style.display = "none";
+      const id = String(lot.id ?? "");
+      const oldEl = id ? document.getElementById(`lot-${id}`) : null;
+      const html = renderCard(lot);
+
+      if (oldEl) oldEl.outerHTML = html;
+      else container.insertAdjacentHTML("afterbegin", html);
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = "⏳ กำลังบันทึก...";
+      toast("กำลังบันทึก Lot...", "info", 900);
+
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          cache: "no-store"
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "บันทึกไม่สำเร็จ");
+        }
+
+        upsertLot(data.lot);
+        form.reset();
+        toast("✅ บันทึก Lot เรียบร้อย", "success", 1400);
+      } catch (err) {
+        console.error(err);
+        toast(`❌ ${err.message || "บันทึกไม่สำเร็จ"}`, "error", 2200);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    });
+  })();
+  </script>
+
 </body>
 
 </html>
