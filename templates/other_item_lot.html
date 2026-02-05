@@ -113,7 +113,7 @@
     <div class="section-title">➕ เพิ่ม Lot</div>
 
     <div class="add-lot-box">
-      <form method="post" action="/other/{{ item_name | urlencode }}/add_lot">
+      <form id="addLotForm" method="post" action="/other/{{ item_name | urlencode }}/add_lot">
         <label>วันหมดอายุ</label>
         <input type="date" name="expire_date" required>
 
@@ -140,7 +140,7 @@
           <div>ราคา / Lot: {{ "%.2f"|format(lot.price_per_lot) }} บาท</div>
           <div>ราคา / หน่วย: {{ "%.2f"|format(lot.price_per_unit) }} บาท</div>
 
-          <form method="post" action="/other_lot/{{ lot.id }}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+          <form method="post" action="/other_lot/${id}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
             <button class="delete-btn">🗑 ลบ Lot</button>
           </form>
         </div>
