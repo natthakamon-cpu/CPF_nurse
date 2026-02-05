@@ -103,6 +103,7 @@
       border: 1px solid #aaa;
       padding: 12px;
       text-align: center;
+      vertical-align: middle;
     }
 
     th {
@@ -115,8 +116,50 @@
       font-size: 22px;
       cursor: pointer;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      user-select: none;
     }
-    .action-btn:hover { opacity: 0.7; }
+    .action-btn:hover { opacity: 0.75; }
+
+    .action-btn.danger { filter: saturate(1.2); }
+    .action-btn.disabled {
+      pointer-events: none;
+      opacity: .55;
+    }
+
+    /* ✅ เอฟเฟกต์ตอนลบ */
+    tr.removing{
+      opacity: .45;
+      filter: grayscale(1);
+    }
+
+    /* ✅ Toast ไม่บล็อก UI */
+    .toast{
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 9999;
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+      max-width: min(520px, calc(100vw - 48px));
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
+    .toast.success{ background:#1b7f3a; }
+    .toast.error{ background:#b3261e; }
+    .toast.info{ background:#2a2a2a; }
 
     /* ================= FOOTER ================= */
     .footer {
@@ -154,7 +197,7 @@
 
     <h2>ทะเบียนขยะติดเชื้อ</h2>
 
-    <table>
+    <table id="wasteTable">
       <thead>
         <tr>
           <th>ลำดับ</th>
@@ -165,15 +208,15 @@
         </tr>
       </thead>
 
-      <tbody>
+      <tbody id="wasteTbody">
         {% if records|length == 0 %}
-        <tr>
+        <tr class="row-empty">
           <td colspan="5" style="color:#777;">ยังไม่มีข้อมูล</td>
         </tr>
         {% else %}
         {% for w in records %}
-        <tr>
-          <td>{{ loop.index }}</td>
+        <tr data-id="{{ w.id }}">
+          <td class="col-no">{{ loop.index }}</td>
           <td>{{ w.date }}</td>
           <td>
             {% if w.photo %}
@@ -184,9 +227,14 @@
           </td>
           <td>{{ w.place }}</td>
           <td>
-            <a href="/waste/view/{{ w.id }}" class="action-btn">👁️</a>
-            <a href="/waste/edit/{{ w.id }}" class="action-btn">✏️</a>
-            <a href="/waste/delete/{{ w.id }}" class="action-btn" onclick="return confirm('ยืนยันการลบหรือไม่')">🗑️</a>
+            <a href="/waste/view/{{ w.id }}" class="action-btn" title="ดู">👁️</a>
+            <a href="/waste/edit/{{ w.id }}" class="action-btn" title="แก้ไข">✏️</a>
+
+            <!-- ✅ ลบแบบเร็ว: ยังมี href เดิมไว้ (เผื่อ JS ปิด) แต่ JS จะ intercept -->
+            <a href="/waste/delete/{{ w.id }}"
+               class="action-btn danger js-delete"
+               data-id="{{ w.id }}"
+               title="ลบ">🗑️</a>
           </td>
         </tr>
         {% endfor %}
@@ -194,11 +242,137 @@
       </tbody>
     </table>
 
-  </div> <!-- ✅ ปิด container -->
+  </div>
 
   <div class="footer">
     © 2026 Safety Officer, CPF Khon Kaen Feedmill
   </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const deletingIds = new Set();
+
+    function showToast(msg, type="info", ms=1400){
+      const el = document.getElementById("toast");
+      if (!el) return;
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+    }
+
+    function renumberRows(){
+      const rows = document.querySelectorAll("#wasteTbody tr[data-id]");
+      rows.forEach((tr, idx) => {
+        const no = tr.querySelector(".col-no");
+        if (no) no.textContent = String(idx + 1);
+      });
+    }
+
+    function ensureEmptyRow(){
+      const tbody = document.getElementById("wasteTbody");
+      const hasData = tbody.querySelector('tr[data-id]');
+      let empty = tbody.querySelector('.row-empty');
+
+      if (!hasData && !empty){
+        tbody.insertAdjacentHTML("beforeend", `
+          <tr class="row-empty">
+            <td colspan="5" style="color:#777;">ยังไม่มีข้อมูล</td>
+          </tr>
+        `);
+      }
+
+      if (hasData && empty){
+        empty.remove();
+      }
+    }
+
+    // ✅ ส่งคำสั่งลบแบบไม่ต้อง reload หน้า และ “แถวหายทันที”
+    async function deleteWaste(id, btn){
+      if (deletingIds.has(id)) return;
+      if (!confirm("ยืนยันการลบหรือไม่")) return;
+
+      deletingIds.add(id);
+
+      const row = btn.closest("tr");
+      const parent = row ? row.parentNode : null;
+      const nextEl = row ? row.nextElementSibling : null;
+      const rowHTML = row ? row.outerHTML : null;
+
+      // --- Optimistic UI: หายทันที ---
+      if (row){
+        row.classList.add("removing");
+        // กันกดซ้ำ
+        row.querySelectorAll(".action-btn").forEach(a => a.classList.add("disabled"));
+        btn.textContent = "⏳";
+        btn.title = "กำลังลบ...";
+        // ลบทันที (ไม่ rebuild ทั้งตาราง)
+        row.remove();
+        renumberRows();
+        ensureEmptyRow();
+      }
+
+      showToast("กำลังลบ...", "info", 900);
+
+      // --- ยิง backend ลบจริง ---
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000); // กันค้าง 12s
+
+      try{
+        // ใช้ URL เดิม /waste/delete/<id> (ของคุณเป็น GET ลบแล้ว redirect)
+        const url = btn.getAttribute("href");
+
+        const res = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow",
+          keepalive: true,
+          signal: controller.signal
+        });
+
+        clearTimeout(timer);
+
+        if (!res.ok) throw new Error("delete failed");
+
+        showToast("✅ ลบแล้ว", "success", 1400);
+
+      }catch(err){
+        clearTimeout(timer);
+        console.error(err);
+
+        // rollback: คืนแถวกลับ
+        if (parent && rowHTML){
+          // ลบ empty row ถ้ามี
+          const empty = document.querySelector("#wasteTbody .row-empty");
+          if (empty) empty.remove();
+
+          if (nextEl) nextEl.insertAdjacentHTML("beforebegin", rowHTML);
+          else parent.insertAdjacentHTML("beforeend", rowHTML);
+
+          renumberRows();
+          ensureEmptyRow();
+        }
+
+        showToast("❌ ลบไม่สำเร็จ (คืนข้อมูลแล้ว)", "error", 2200);
+      }finally{
+        deletingIds.delete(id);
+      }
+    }
+
+    // ✅ ใช้ event delegation: เร็ว + ไม่ต้องผูก onclick หลายตัว
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.getElementById("wasteTbody");
+      tbody.addEventListener("click", (e) => {
+        const btn = e.target.closest(".js-delete");
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.dataset.id;
+        deleteWaste(id, btn);
+      });
+    });
+  </script>
 
 </body>
 </html>
