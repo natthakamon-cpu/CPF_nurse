@@ -593,35 +593,39 @@ def medicine_delete(med_id):
 
 
 @app.route("/other/<path:item_name>")
+@login_required
 def other_item_detail(item_name):
-    item_name = unquote(item_name).strip()
+    item_name = norm_text(unquote(item_name))
 
-    check = gas_list("other_item", 5000)
+    # ตรวจว่ามี item จริง
+    check = gas_search("other_item", "name", item_name)
     exists = False
-    if check.get("ok"):
-        for r in check.get("data", []):
-            if str(r.get("name", "")).strip().lower() == item_name.lower():
-                exists = True
-                break
+    if isinstance(check, dict) and check.get("ok"):
+        rows = _unwrap_rows(check)
+        exists = any(norm_text(r.get("name", "")).lower() == item_name.lower() for r in rows)
+
+    # fallback เผื่อ GAS search ไม่ทำงาน
+    if not exists:
+        all_items = gas_list("other_item", 5000)
+        if all_items.get("ok"):
+            exists = any(norm_text(r.get("name", "")).lower() == item_name.lower()
+                         for r in all_items.get("data", []))
+
     if not exists:
         return redirect(url_for("medicine_list", group="อื่นๆ"))
 
-    lots_res = gas_list("other_lot", 5000)
-    lots = []
-    if lots_res.get("ok"):
-        for l in lots_res.get("data", []):
-            if str(l.get("item_name", "")).strip().lower() == item_name.lower():
-                lots.append(l)
-    lots.sort(key=lambda x: x.get("expire_date", ""))
+    # ✅ ดึงเฉพาะ lot ของ item นี้
+    lots = _get_lots_by_field_fast("other_lot", "item_name", item_name, limit=10000)
+    lots = [l for l in lots if norm_text(l.get("item_name", "")).lower() == item_name.lower()]
+    lots.sort(key=lambda x: str(x.get("expire_date", "")))
 
-    # ✅ back ไปหน้ารายการอื่นๆ
     back_url = url_for("medicine_list", group="อื่นๆ")
-
     return render_template("other_item_lot.html",
                            group="อื่นๆ",
                            item_name=item_name,
                            lots=lots,
                            back_url=back_url)
+
 
 
 @app.route("/other/<path:item_name>/add_lot", methods=["POST"])
@@ -712,6 +716,7 @@ def other_add_lot(item_name):
     return redirect("/other/" + quote(item_name))
 
 @app.route("/other_lot/<int:lot_id>/delete", methods=["POST"])
+@catalog_required
 def other_delete_lot(lot_id):
     # ลบได้เลย แล้วเด้งกลับไปหน้าก่อน
     lot_res = gas_get("other_lot", lot_id)
@@ -1169,22 +1174,25 @@ def api_other_items():
 @login_required
 def api_other_lots():
     item_name = norm_text(request.args.get("item_name", ""))
-    all_lots = gas_list("other_lot", 5000)
+    if not item_name:
+        return jsonify({"lots": []})
+
+    rows = _get_lots_by_field_fast("other_lot", "item_name", item_name, limit=10000)
 
     lots = []
-    if all_lots.get("ok"):
-        for r in all_lots.get("data", []):
-            if norm_text(r.get("item_name", "")).lower() == item_name.lower():
-                if int(r.get("qty_remain", 0) or 0) > 0:
-                    lots.append({
-                        "id": r.get("id"),
-                        "name": r.get("lot_name"),
-                        "remain": r.get("qty_remain"),
-                        "price": r.get("price_per_unit")
-                    })
+    for r in rows:
+        if norm_text(r.get("item_name", "")).lower() != item_name.lower():
+            continue
+        if int(r.get("qty_remain", 0) or 0) > 0:
+            lots.append({
+                "id": r.get("id"),
+                "name": r.get("lot_name"),
+                "remain": r.get("qty_remain"),
+                "price": r.get("price_per_unit")
+            })
 
-    # ให้รูปแบบเหมือน /api/medicine_lots
     return jsonify({"lots": lots})
+
 
 @app.route("/api/medicine_list")
 def api_medicine_list():
