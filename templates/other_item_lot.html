@@ -130,26 +130,114 @@
     <hr>
     <div class="section-title">📦 Lot ที่มีอยู่</div>
 
-    {% if lots %}
-      {% for lot in lots %}
-        <div class="lot-box">
-          <div class="lot-header">{{ lot.lot_name }}</div>
-          <div>วันหมดอายุ: {{ lot.expire_date }}</div>
-          <div>จำนวนทั้งหมด: {{ lot.qty_total }}</div>
-          <div>คงเหลือ: {{ lot.qty_remain }}</div>
-          <div>ราคา / Lot: {{ "%.2f"|format(lot.price_per_lot) }} บาท</div>
-          <div>ราคา / หน่วย: {{ "%.2f"|format(lot.price_per_unit) }} บาท</div>
+    <div id="lotList">
+      {% if lots %}
+        {% for lot in lots %}
+          <div class="lot-box" data-lot-id="{{ lot.id }}">
+            <div class="lot-header">{{ lot.lot_name }}</div>
+            <div>วันหมดอายุ: <span class="v-expire">{{ lot.expire_date }}</span></div>
+            <div>จำนวนทั้งหมด: <span class="v-total">{{ lot.qty_total }}</span></div>
+            <div>คงเหลือ: <span class="v-remain">{{ lot.qty_remain }}</span></div>
+            <div>ราคา / Lot: <span class="v-price-lot">{{ "%.2f"|format(lot.price_per_lot) }}</span> บาท</div>
+            <div>ราคา / หน่วย: <span class="v-price-unit">{{ "%.2f"|format(lot.price_per_unit) }}</span> บาท</div>
 
-          <form method="post" action="/other_lot/${id}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
-            <button class="delete-btn">🗑 ลบ Lot</button>
-          </form>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p style="color:#999;">ยังไม่มี Lot ของรายการนี้</p>
-    {% endif %}
+            <form method="post" action="/other_lot/{{ lot.id }}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+              <button class="delete-btn">🗑 ลบ Lot</button>
+            </form>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p id="emptyLotText" style="color:#999;">ยังไม่มี Lot ของรายการนี้</p>
+      {% endif %}
+    </div>
+
   </div>
 
   <div class="footer">© 2026 Safety Officer, CPF Khon Kaen Feedmill</div>
+
+  <script>
+  (() => {
+    const form = document.getElementById("addLotForm");
+    const lotList = document.getElementById("lotList");
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    function to2(v){ return Number(v || 0).toFixed(2); }
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    function renderLot(lot){
+      return `
+        <div class="lot-box" data-lot-id="${esc(lot.id)}">
+          <div class="lot-header">${esc(lot.lot_name)}</div>
+          <div>วันหมดอายุ: <span class="v-expire">${esc(lot.expire_date)}</span></div>
+          <div>จำนวนทั้งหมด: <span class="v-total">${esc(lot.qty_total)}</span></div>
+          <div>คงเหลือ: <span class="v-remain">${esc(lot.qty_remain)}</span></div>
+          <div>ราคา / Lot: <span class="v-price-lot">${to2(lot.price_per_lot)}</span> บาท</div>
+          <div>ราคา / หน่วย: <span class="v-price-unit">${to2(lot.price_per_unit)}</span> บาท</div>
+          <form method="post" action="/other_lot/${esc(lot.id)}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+            <button class="delete-btn">🗑 ลบ Lot</button>
+          </form>
+        </div>
+      `;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      const oldText = submitBtn.textContent;
+      submitBtn.textContent = "กำลังบันทึก...";
+
+      try {
+        const fd = new FormData(form);
+        const body = new URLSearchParams(fd);
+
+        const res = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "บันทึกไม่สำเร็จ");
+        }
+
+        const lot = data.lot || {};
+        const id = String(lot.id ?? "");
+        const old = id ? lotList.querySelector(`.lot-box[data-lot-id="${CSS.escape(id)}"]`) : null;
+
+        if (old) {
+          old.querySelector(".v-expire").textContent = lot.expire_date ?? "";
+          old.querySelector(".v-total").textContent = lot.qty_total ?? 0;
+          old.querySelector(".v-remain").textContent = lot.qty_remain ?? 0;
+          old.querySelector(".v-price-lot").textContent = to2(lot.price_per_lot);
+          old.querySelector(".v-price-unit").textContent = to2(lot.price_per_unit);
+        } else {
+          const empty = document.getElementById("emptyLotText");
+          if (empty) empty.remove();
+          lotList.insertAdjacentHTML("afterbegin", renderLot(lot));
+        }
+
+        form.reset();
+      } catch (err) {
+        alert(err.message || "บันทึกไม่สำเร็จ");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = oldText;
+      }
+    });
+  })();
+  </script>
+
 </body>
 </html>
