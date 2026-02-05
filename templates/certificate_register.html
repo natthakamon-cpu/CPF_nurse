@@ -9,13 +9,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    .header {
-      font-size: 16px;
-    }
+    .header { font-size: 16px; }
 
     body {
       font-family: 'Sarabun', sans-serif;
@@ -23,9 +19,7 @@
       margin: 0;
     }
 
-    .container {
-      font-size: 24px;
-    }
+    .container { font-size: 24px; }
 
     /* ================= HEADER ================= */
     .header {
@@ -33,7 +27,6 @@
       background: #ffffff;
       border-bottom: 1px solid #e0e0e0;
       padding: 14px 40px;
-
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -48,9 +41,7 @@
       color: #5b2c83;
     }
 
-    .header-left i {
-      font-size: 26px;
-    }
+    .header-left i { font-size: 26px; }
 
     .header-right {
       display: flex;
@@ -68,7 +59,7 @@
       font-weight: 600;
     }
 
-    /* ===== กล่องหลัก (โครงเหมือนหน้าเมนูย่อย certificate_menu.html) ===== */
+    /* ===== กล่องหลัก ===== */
     .box {
       position: relative;
       background: #fff;
@@ -79,7 +70,7 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, .25);
     }
 
-    /* ✅ ปุ่มย้อนกลับ: ตำแหน่ง+สไตล์เหมือนหน้าเมนูย่อย */
+    /* ปุ่มย้อนกลับ */
     .top-bar {
       text-align: left;
       margin-bottom: 10px;
@@ -97,9 +88,7 @@
       transition: 0.2s;
     }
 
-    .back-menu-btn:hover {
-      background: #218838;
-    }
+    .back-menu-btn:hover { background: #218838; }
 
     h2 {
       text-align: center;
@@ -113,6 +102,8 @@
       padding: 14px;
       font-size: 22px;
       margin-bottom: 20px;
+      border: 1px solid #bbb;
+      border-radius: 10px;
     }
 
     table {
@@ -120,30 +111,70 @@
       border-collapse: collapse;
     }
 
-    th,
-    td {
+    th, td {
       border: 1px solid #ccc;
       padding: 10px;
       text-align: center;
+      vertical-align: middle;
     }
 
-    th {
-      background: #90CAF9;
-    }
+    th { background: #90CAF9; }
 
     .action-btn {
       cursor: pointer;
       font-size: 22px;
       margin: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      user-select: none;
     }
 
-    .page {
-      display: none;
+    .action-btn:hover { opacity: .75; }
+
+    .action-btn.disabled {
+      pointer-events: none;
+      opacity: .55;
     }
 
-    .page.active {
-      display: block;
+    .action-btn.danger { filter: saturate(1.2); }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    tr.removing {
+      opacity: .45;
+      filter: grayscale(1);
     }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 9999;
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .25);
+      max-width: min(520px, calc(100vw - 48px));
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #1b7f3a; }
+    .toast.error { background: #b3261e; }
+    .toast.info { background: #2a2a2a; }
 
     /* ================= FOOTER ================= */
     .footer {
@@ -173,26 +204,20 @@
   </div>
 
   <div class="container">
-
     <!-- ================= LIST ================= -->
     <div id="page-list" class="box page active">
-
-      <!-- ✅ ปุ่มย้อนกลับ (ตำแหน่งเดียวกับหน้าเมนูย่อย) -->
       <div class="top-bar">
         <a href="/medical_certificate" class="back-menu-btn">⬅ ย้อนกลับ</a>
       </div>
 
       <h2>ทะเบียนใบรับรองแพทย์</h2>
 
-      <input class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable(this.value)">
-
+      <input id="searchInput" class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable(this.value)">
       <table id="recordTable"></table>
     </div>
 
     <!-- ================= VIEW ================= -->
     <div id="page-view" class="box page">
-
-      <!-- ✅ ปุ่มย้อนกลับ (ตำแหน่งเดียวกับหน้าเมนูย่อย) -->
       <div class="top-bar">
         <a href="#" class="back-menu-btn" onclick="back(); return false;">⬅ ย้อนกลับ</a>
       </div>
@@ -200,181 +225,295 @@
       <h2>ดูข้อมูลใบรับรองแพทย์</h2>
       <div id="viewBox"></div>
     </div>
+  </div>
 
-    <script>
-      /* ================= CONFIG ================= */
-      const PART1_FIELDS = {
-        title: "คำนำหน้า",
-        fullname: "ชื่อ - นามสกุล",
-        address: "ที่อยู่",
-        disease: "โรคประจำตัว",
-        disease_detail: "รายละเอียดโรค",
-        accident: "อุบัติเหตุ / ผ่าตัด",
-        accident_detail: "รายละเอียดอุบัติเหตุ",
-        hospital: "เคยรักษาในโรงพยาบาล",
-        hospital_detail: "รายละเอียดการรักษา",
-        other_history: "ประวัติอื่นที่สำคัญ"
-      };
+  <div class="footer">
+    © 2026 Safety Officer, CPF Khon Kaen Feedmill
+  </div>
 
-      const PART2_FIELDS = {
-        doctor_name: "ชื่อแพทย์",
-        hospital_name: "ชื่อโรงพยาบาล/สถานที่ตรวจ",
-        weight: "น้ำหนัก",
-        height: "ส่วนสูง",
-        bp: "ความดัน",
-        pulse: "ชีพจร",
-        body_status: "สภาพร่างกายทั่วไปอยู่ในเกณฑ์",
-        body_detail: "สรุปความคิดเห็นแพทย์",
-        work_result: "ผลการตรวจ"
-      };
+  <div id="toast" class="toast"></div>
 
-      // โหลดข้อมูลจาก Server (Jinja2 template)
-      const records = {{ records | tojson | safe }};
+  <script>
+    /* ================= CONFIG ================= */
+    const PART2_FIELDS = {
+      doctor_name: "ชื่อแพทย์",
+      hospital_name: "ชื่อโรงพยาบาล/สถานที่ตรวจ",
+      weight: "น้ำหนัก",
+      height: "ส่วนสูง",
+      bp: "ความดัน",
+      pulse: "ชีพจร",
+      body_status: "สภาพร่างกายทั่วไปอยู่ในเกณฑ์",
+      body_detail: "สรุปความคิดเห็นแพทย์",
+      work_result: "ผลการตรวจ"
+    };
 
-      /* ================= PAGE ================= */
-      function openPage(p) {
-        document.querySelectorAll(".page").forEach(x => x.classList.remove("active"));
-        document.getElementById("page-" + p).classList.add("active");
-        window.scrollTo({ top: 0, behavior: "smooth" }); // ✅ ให้ขึ้นไปบนสุดทุกครั้ง
+    // ข้อมูลเริ่มต้นจาก server
+    const initialRecords = {{ records | tojson | safe }};
+    let allRecords = Array.isArray(initialRecords) ? [...initialRecords] : [];
+    let currentQuery = "";
+    const deletingIds = new Set();
+
+    // รองรับหลาย route ของการลบใบรับรองแพทย์
+    const DELETE_ENDPOINTS = [
+      { method: "DELETE", url: (id) => `/api/medical_certificate/delete/${encodeURIComponent(id)}`, expectsJson: true },
+      { method: "POST",   url: (id) => `/medical_certificate/delete/${encodeURIComponent(id)}`,     expectsJson: true },
+      { method: "GET",    url: (id) => `/medical_certificate/delete/${encodeURIComponent(id)}`,     expectsJson: false }
+    ];
+
+    /* ================= UTIL ================= */
+    function safe(v) {
+      return (v === null || v === undefined || v === "") ? "-" : String(v);
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(msg, type = "info", ms = 1400) {
+      const el = document.getElementById("toast");
+      if (!el) return;
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+    }
+
+    function openPage(p) {
+      document.querySelectorAll(".page").forEach(x => x.classList.remove("active"));
+      document.getElementById("page-" + p).classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function back() { openPage("list"); }
+
+    function getFilteredRecords() {
+      if (!currentQuery) return allRecords;
+      return allRecords.filter(r =>
+        (r.fullname || "").toLowerCase().includes(currentQuery) ||
+        String(r.requester_date || r.created_at || "").toLowerCase().includes(currentQuery)
+      );
+    }
+
+    function renumberVisibleRows() {
+      const rows = document.querySelectorAll("#recordTable tr[data-id]");
+      rows.forEach((tr, idx) => {
+        const no = tr.querySelector(".col-no");
+        if (no) no.textContent = String(idx + 1);
+      });
+    }
+
+    function ensureEmptyRow() {
+      const table = document.getElementById("recordTable");
+      const hasData = table.querySelector("tr[data-id]");
+      const hasEmpty = table.querySelector("tr.row-empty");
+      if (!hasData && !hasEmpty) {
+        table.insertAdjacentHTML("beforeend", `
+          <tr class="row-empty">
+            <td colspan="4" style="color:#777;">ยังไม่มีข้อมูล</td>
+          </tr>
+        `);
       }
-      function back() { openPage("list"); }
+      if (hasData && hasEmpty) hasEmpty.remove();
+    }
 
-      /* ================= TABLE ================= */
-      function loadTable(list = records) {
-        let html = `
-          <tr>
-            <th>#</th>
-            <th>ชื่อ</th>
-            <th>วันที่</th>
-            <th>จัดการ</th>
+    /* ================= TABLE ================= */
+    function renderTable(list = allRecords) {
+      let html = `
+        <tr>
+          <th>#</th>
+          <th>ชื่อ</th>
+          <th>วันที่</th>
+          <th>จัดการ</th>
+        </tr>
+      `;
+
+      if (!list.length) {
+        html += `
+          <tr class="row-empty">
+            <td colspan="4" style="color:#777;">ยังไม่มีข้อมูล</td>
           </tr>
         `;
-
-        list.forEach((r, i) => {
-          const recordId = r.id;
-
-          html += `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${r.fullname || "-"}</td>
-              <td>${r.requester_date || r.created_at || "-"}</td>
-              <td>
-                <span class="action-btn" onclick="viewRecord(${i})">👁️</span>
-                <span class="action-btn" onclick="printRecord(${JSON.stringify(recordId)})">🖨️</span>
-                <span class="action-btn" onclick="editRecord(${JSON.stringify(recordId)})">✏️</span>
-                <span class="action-btn" onclick="deleteRecord(${JSON.stringify(recordId)})">🗑️</span>
-              </td>
-            </tr>
-          `;
-        });
-
-        recordTable.innerHTML = html;
+        document.getElementById("recordTable").innerHTML = html;
+        return;
       }
-      loadTable();
 
-      /* ================= VIEW ================= */
-      function viewRecord(i) {
-        const r = records[i];
-        if (!r) return;
-
-        let html = `
-          <h3>📌 ส่วนที่ 1 ข้อมูลผู้ขอรับใบรับรอง</h3>
-          <table>
-            <tr><td>คำนำหน้า</td><td>${r.title || "-"}</td></tr>
-            <tr><td>ชื่อ - นามสกุล</td><td>${r.fullname || "-"}</td></tr>
-            <tr><td>ที่อยู่</td><td>${r.address || "-"}</td></tr>
-            <tr><td>โรคประจำตัว</td><td>${r.disease || "-"} ${r.disease_detail || ""}</td></tr>
-            <tr><td>อุบัติเหตุ / ผ่าตัด</td><td>${r.accident || "-"} ${r.accident_detail || ""}</td></tr>
-            <tr><td>เคยรักษาในโรงพยาบาล</td><td>${r.hospital || "-"} ${r.hospital_detail || ""}</td></tr>
-            <tr><td>ประวัติอื่นที่สำคัญ</td><td>${r.other_history || "-"}</td></tr>
-            <tr><td>ลงชื่อผู้ขอ</td><td>${r.requester_sign || "-"}</td></tr>
-            <tr><td>วันที่</td><td>${r.requester_date || "-"}</td></tr>
-          </table>
-
-          <h3>📌 ส่วนที่ 2 ผลการตรวจและความเห็นแพทย์</h3>
-          <table>
+      for (let i = 0; i < list.length; i++) {
+        const r = list[i];
+        const id = r.id;
+        html += `
+          <tr data-id="${escapeHtml(id)}">
+            <td class="col-no">${i + 1}</td>
+            <td>${escapeHtml(safe(r.fullname))}</td>
+            <td>${escapeHtml(safe(r.requester_date || r.created_at))}</td>
+            <td>
+              <button class="action-btn js-action" data-action="view" data-id="${escapeHtml(id)}" title="ดู">👁️</button>
+              <button class="action-btn js-action" data-action="print" data-id="${escapeHtml(id)}" title="พิมพ์">🖨️</button>
+              <button class="action-btn js-action" data-action="edit" data-id="${escapeHtml(id)}" title="แก้ไข">✏️</button>
+              <button class="action-btn danger js-action" data-action="delete" data-id="${escapeHtml(id)}" title="ลบ">🗑️</button>
+            </td>
+          </tr>
         `;
-
-        Object.entries(PART2_FIELDS).forEach(([k, l]) => {
-          let value = r[k] || "-";
-          html += `<tr><td>${l}</td><td>${value}</td></tr>`;
-        });
-
-        html += `</table>`;
-
-        viewBox.innerHTML = html;
-        openPage("view");
       }
 
-      /* ================= EDIT ================= */
-      function editRecord(id) {
-        // ส่ง ID ผ่าน URL แทน localStorage
-        window.location.href = `/medical_certificate/edit/${id}`;
-      }
+      document.getElementById("recordTable").innerHTML = html;
+    }
 
-      /* ================= PRINT ================= */
-      function printRecord(id) {
-        window.open(`/medical_certificate/print/${encodeURIComponent(id)}`, "_blank");
-      }
+    function filterTable(q) {
+      currentQuery = (q || "").trim().toLowerCase();
+      renderTable(getFilteredRecords());
+    }
 
-      /* ================= DELETE ================= */
-      async function deleteRecord(id) {
-        if (!confirm("ยืนยันการลบข้อมูลนี้?")) return;
+    /* ================= VIEW / EDIT / PRINT ================= */
+    function viewRecord(id) {
+      const r = allRecords.find(x => String(x.id) === String(id));
+      if (!r) return;
 
-        // ✅ เก็บสำรองไว้ เผื่อลบจริงไม่สำเร็จจะคืนค่า
-        const backup = allRecords.slice();
+      let html = `
+        <h3>📌 ส่วนที่ 1 ข้อมูลผู้ขอรับใบรับรอง</h3>
+        <table>
+          <tr><td>คำนำหน้า</td><td>${escapeHtml(safe(r.title))}</td></tr>
+          <tr><td>ชื่อ - นามสกุล</td><td>${escapeHtml(safe(r.fullname))}</td></tr>
+          <tr><td>ที่อยู่</td><td>${escapeHtml(safe(r.address))}</td></tr>
+          <tr><td>โรคประจำตัว</td><td>${escapeHtml(safe(r.disease))} ${escapeHtml(safe(r.disease_detail === "-" ? "" : r.disease_detail || ""))}</td></tr>
+          <tr><td>อุบัติเหตุ / ผ่าตัด</td><td>${escapeHtml(safe(r.accident))} ${escapeHtml(safe(r.accident_detail === "-" ? "" : r.accident_detail || ""))}</td></tr>
+          <tr><td>เคยรักษาในโรงพยาบาล</td><td>${escapeHtml(safe(r.hospital))} ${escapeHtml(safe(r.hospital_detail === "-" ? "" : r.hospital_detail || ""))}</td></tr>
+          <tr><td>ประวัติอื่นที่สำคัญ</td><td>${escapeHtml(safe(r.other_history))}</td></tr>
+          <tr><td>ลงชื่อผู้ขอ</td><td>${escapeHtml(safe(r.requester_sign))}</td></tr>
+          <tr><td>วันที่</td><td>${escapeHtml(safe(r.requester_date))}</td></tr>
+        </table>
 
-        // ✅ ทำให้ UI ลบทันที (Optimistic UI)
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) row.classList.add("removing");
+        <h3>📌 ส่วนที่ 2 ผลการตรวจและความเห็นแพทย์</h3>
+        <table>
+      `;
 
-        allRecords = allRecords.filter(r => Number(r.id) !== Number(id));
-        renderTable(getFilteredRecordsFromInput());
-        showToast("กำลังลบ...", "info", 900);
+      Object.entries(PART2_FIELDS).forEach(([k, label]) => {
+        html += `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(safe(r[k]))}</td></tr>`;
+      });
 
+      html += `</table>`;
+
+      document.getElementById("viewBox").innerHTML = html;
+      openPage("view");
+    }
+
+    function editRecord(id) {
+      window.location.href = `/medical_certificate/edit/${encodeURIComponent(id)}`;
+    }
+
+    function printRecord(id) {
+      window.open(`/medical_certificate/print/${encodeURIComponent(id)}`, "_blank");
+    }
+
+    /* ================= DELETE (FAST) ================= */
+    async function attemptDeleteOnServer(id) {
+      for (const ep of DELETE_ENDPOINTS) {
         try {
-          const res = await fetch(`/api/treatment/delete/${id}`, {
-            method: "DELETE",
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 12000);
+
+          const res = await fetch(ep.url(id), {
+            method: ep.method,
             headers: { "Accept": "application/json" },
-            cache: "no-store"
+            cache: "no-store",
+            keepalive: true,
+            signal: controller.signal
           });
 
-          const r = await res.json();
-          if (!res.ok || !r.success) {
-            throw new Error(r?.error || "delete failed");
+          clearTimeout(timeout);
+
+          if (!res.ok) continue;
+
+          if (ep.expectsJson) {
+            const data = await res.json().catch(() => ({ success: true }));
+            if (typeof data.success !== "undefined" && !data.success) continue;
           }
 
-          // ✅ สำเร็จ: ไม่ต้องโหลดใหม่ทั้งตาราง
-          showToast("✅ ลบแล้ว", "success", 1400);
-          // อยู่หน้า list ต่อเลย ไม่ต้อง switchPage/alert
-        } catch (err) {
-          console.error(err);
-
-          // ❌ ไม่สำเร็จ: คืนค่ากลับ
-          allRecords = backup;
-          renderTable(getFilteredRecordsFromInput());
-          showToast("❌ ลบไม่สำเร็จ (คืนข้อมูลกลับแล้ว)", "error", 2200);
+          return true; // สำเร็จ
+        } catch (_) {
+          // ลอง endpoint ถัดไป
         }
       }
+      throw new Error("delete failed on all endpoints");
+    }
 
+    async function deleteRecord(id, rowEl) {
+      if (deletingIds.has(id)) return;
+      if (!confirm("ยืนยันการลบข้อมูลนี้?")) return;
 
-      /* ================= SEARCH ================= */
-      function filterTable(q) {
-        q = q.toLowerCase();
-        const filtered = records.filter(r =>
-          (r.fullname || "").toLowerCase().includes(q) ||
-          (r.requester_date || "").includes(q)
-        );
-        loadTable(filtered);
+      deletingIds.add(id);
+
+      const backupAll = allRecords.slice();
+      const row = rowEl;
+      const parent = row ? row.parentNode : null;
+      const nextEl = row ? row.nextElementSibling : null;
+      const rowHTML = row ? row.outerHTML : null;
+
+      // Optimistic UI: ลบออกทันที
+      if (row) {
+        row.classList.add("removing");
+        row.querySelectorAll(".js-action").forEach(b => b.classList.add("disabled"));
+        const delBtn = row.querySelector('[data-action="delete"]');
+        if (delBtn) delBtn.textContent = "⏳";
+        row.remove();
       }
-    </script>
 
-    <!-- ===== FOOTER ===== -->
-    <div class="footer">
-      © 2025 Safety Officer, CPF Khon Kaen Feedmill
-    </div>
+      allRecords = allRecords.filter(r => String(r.id) !== String(id));
+      renumberVisibleRows();
+      ensureEmptyRow();
+      showToast("กำลังลบ...", "info", 900);
 
-  </div>
+      try {
+        await attemptDeleteOnServer(id);
+        showToast("✅ ลบแล้ว", "success", 1400);
+      } catch (err) {
+        console.error(err);
+
+        // rollback state
+        allRecords = backupAll;
+
+        // rollback DOM
+        if (parent && rowHTML) {
+          const empty = document.querySelector("#recordTable .row-empty");
+          if (empty) empty.remove();
+
+          if (nextEl) nextEl.insertAdjacentHTML("beforebegin", rowHTML);
+          else parent.insertAdjacentHTML("beforeend", rowHTML);
+
+          renumberVisibleRows();
+          ensureEmptyRow();
+        } else {
+          renderTable(getFilteredRecords());
+        }
+
+        showToast("❌ ลบไม่สำเร็จ (คืนข้อมูลกลับแล้ว)", "error", 2200);
+      } finally {
+        deletingIds.delete(id);
+      }
+    }
+
+    /* ================= INIT ================= */
+    document.addEventListener("DOMContentLoaded", () => {
+      renderTable(allRecords);
+
+      document.getElementById("recordTable").addEventListener("click", (e) => {
+        const btn = e.target.closest(".js-action");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+
+        if (action === "view") return viewRecord(id);
+        if (action === "print") return printRecord(id);
+        if (action === "edit") return editRecord(id);
+        if (action === "delete") return deleteRecord(id, btn.closest("tr"));
+      });
+    });
+  </script>
 </body>
-
 </html>
