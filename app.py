@@ -207,6 +207,42 @@ def gas_delete(table, row_id):
         print(f"gas_delete error: {e}")
         return {"ok": False, "message": str(e)}
 
+def _to_int(v, default=0):
+    try:
+        return int(float(str(v).replace(",", "").strip()))
+    except:
+        return default
+
+def _to_float(v, default=0.0):
+    try:
+        return float(str(v).replace(",", "").strip())
+    except:
+        return default
+
+def _wants_json_response():
+    accept = (request.headers.get("Accept") or "").lower()
+    xrw = (request.headers.get("X-Requested-With") or "").lower()
+    return request.is_json or ("application/json" in accept) or (xrw == "xmlhttprequest")
+
+def _get_lots_by_field_fast(table, field, value, limit=5000):
+    """
+    เร็วกว่า list ทั้งตาราง:
+    - พยายามใช้ gas_search ก่อน
+    - ถ้าไม่ได้ ค่อย fallback ไป list + filter
+    """
+    sr = gas_search(table, field, value)
+    if isinstance(sr, dict) and sr.get("ok"):
+        rows = _unwrap_rows(sr)
+        if isinstance(rows, list):
+            return rows
+
+    lr = gas_list(table, limit)
+    rows = _unwrap_rows(lr)
+    out = []
+    for r in rows:
+        if str(r.get(field, "")).strip() == str(value).strip():
+            out.append(r)
+    return out
 
 # ============================================
 # AUTH DECORATORS
@@ -589,47 +625,61 @@ def other_item_detail(item_name):
 
 
 @app.route("/other/<path:item_name>/add_lot", methods=["POST"])
+@catalog_required
 def other_add_lot(item_name):
     item_name = unquote(item_name).strip()
 
-    expire_date = (request.form.get("expire_date") or "").strip()
-    qty = int(request.form.get("qty", 0) or 0)
-    price = float(request.form.get("price", 0) or 0)
+    src = request.get_json(silent=True) or request.form
+    expire_date = (src.get("expire_date") or "").strip()
+    qty = _to_int(src.get("qty"), 0)
+    price = _to_float(src.get("price"), 0.0)
 
     if not expire_date or qty <= 0 or price <= 0:
+        if _wants_json_response():
+            return jsonify({"success": False, "message": "ข้อมูลไม่ครบหรือไม่ถูกต้อง"}), 400
         return "ข้อมูลไม่ครบหรือไม่ถูกต้อง", 400
 
-    all_lots = gas_list("other_lot", 5000)
-    rows = all_lots.get("data", []) if all_lots.get("ok") else []
+    # ✅ เร็วขึ้น: search เฉพาะ item_name
+    rows = _get_lots_by_field_fast("other_lot", "item_name", item_name)
 
     existing = None
     for lot in rows:
-        if str(lot.get("item_name", "")).strip().lower() == item_name.lower() and str(lot.get("expire_date", "")).strip() == expire_date:
+        if str(lot.get("expire_date", "")).strip() == expire_date:
             existing = lot
             break
 
     if existing:
-        new_qty_total = int(existing.get("qty_total", 0)) + qty
-        new_qty_remain = int(existing.get("qty_remain", 0)) + qty
-        new_price_per_lot = float(existing.get("price_per_lot", 0)) + price
-        new_price_per_unit = new_price_per_lot / new_qty_total if new_qty_total > 0 else 0
+        new_qty_total = _to_int(existing.get("qty_total"), 0) + qty
+        new_qty_remain = _to_int(existing.get("qty_remain"), 0) + qty
+        new_price_per_lot = _to_float(existing.get("price_per_lot"), 0.0) + price
+        new_price_per_unit = (new_price_per_lot / new_qty_total) if new_qty_total > 0 else 0
 
-        gas_update("other_lot", existing["id"], {
+        upd = gas_update("other_lot", existing["id"], {
             "qty_total": new_qty_total,
             "qty_remain": new_qty_remain,
             "price_per_lot": new_price_per_lot,
             "price_per_unit": round(new_price_per_unit, 4)
         })
-    else:
-        count = 0
-        for lot in rows:
-            if str(lot.get("item_name", "")).strip().lower() == item_name.lower():
-                count += 1
+        if not upd.get("ok"):
+            if _wants_json_response():
+                return jsonify({"success": False, "message": upd.get("message", "update failed")}), 500
+            return "บันทึกไม่สำเร็จ", 500
 
-        lot_name = f"LOT {count + 1}"
+        lot_obj = {
+            "id": existing.get("id"),
+            "lot_name": existing.get("lot_name"),
+            "expire_date": expire_date,
+            "qty_total": new_qty_total,
+            "qty_remain": new_qty_remain,
+            "price_per_lot": round(new_price_per_lot, 2),
+            "price_per_unit": round(new_price_per_unit, 4),
+        }
+    else:
+        lot_count = len(rows)
+        lot_name = f"LOT {lot_count + 1}"
         price_per_unit = price / qty if qty > 0 else 0
 
-        gas_append("other_lot", {
+        ap = gas_append("other_lot", {
             "item_name": item_name,
             "lot_name": lot_name,
             "expire_date": expire_date,
@@ -639,6 +689,25 @@ def other_add_lot(item_name):
             "price_per_unit": round(price_per_unit, 4),
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         })
+
+        if not ap.get("ok"):
+            if _wants_json_response():
+                return jsonify({"success": False, "message": ap.get("message", "append failed")}), 500
+            return "บันทึกไม่สำเร็จ", 500
+
+        lot_id = ap.get("id")
+        lot_obj = {
+            "id": lot_id,
+            "lot_name": lot_name,
+            "expire_date": expire_date,
+            "qty_total": qty,
+            "qty_remain": qty,
+            "price_per_lot": round(price, 2),
+            "price_per_unit": round(price_per_unit, 4),
+        }
+
+    if _wants_json_response():
+        return jsonify({"success": True, "lot": lot_obj})
 
     return redirect("/other/" + quote(item_name))
 
@@ -688,64 +757,96 @@ def medicine_detail(med_id):
 
 
 @app.route("/medicine/<int:med_id>/add_lot", methods=["POST"])
+@catalog_required
 def add_lot(med_id):
-    expire_date = request.form.get("expire_date", "").strip()
-    qty = int(request.form.get("qty", 0))
-    price = float(request.form.get("price", 0))
+    src = request.get_json(silent=True) or request.form
 
-    # ✅ (เพิ่ม) ดึงชื่อยา/เวชภัณฑ์ เพื่อบันทึกลง medicine_lot.item_name
-    med_res = gas_get("medicine", med_id)
-    item_name = ""
-    if med_res.get("ok") and med_res.get("data"):
-        item_name = str(med_res["data"].get("name", "")).strip()
+    expire_date = (src.get("expire_date") or "").strip()
+    qty = _to_int(src.get("qty"), 0)
+    price = _to_float(src.get("price"), 0.0)
+    item_name = norm_text(src.get("item_name", ""))
 
-    # หา Lot เดิมที่ expire_date เดียวกัน (ใช้ list + filter)
-    all_lots = gas_list("medicine_lot", 5000)
-    existing_lot = None
-    if all_lots.get("ok"):
-        for lot in all_lots.get("data", []):
-            if str(lot.get("medicine_id", "")) == str(med_id) and str(lot.get("expire_date", "")).strip() == expire_date:
-                existing_lot = lot
-                break
+    if not expire_date or qty <= 0 or price <= 0:
+        if _wants_json_response():
+            return jsonify({"success": False, "message": "ข้อมูลไม่ครบหรือไม่ถูกต้อง"}), 400
+        return "ข้อมูลไม่ครบหรือไม่ถูกต้อง", 400
 
-    if existing_lot:
-        # รวม Lot เดิม
-        new_qty_total = int(existing_lot.get("qty_total", 0)) + qty
-        new_qty_remain = int(existing_lot.get("qty_remain", 0)) + qty
-        new_price_per_lot = float(existing_lot.get("price_per_lot", 0)) + price
-        new_price_per_unit = new_price_per_lot / new_qty_total if new_qty_total > 0 else 0
+    # ถ้า client ไม่ส่งชื่อมา ค่อยดึงครั้งเดียว
+    if not item_name:
+        med_res = gas_get("medicine", med_id)
+        if med_res.get("ok") and med_res.get("data"):
+            item_name = norm_text(med_res["data"].get("name", ""))
 
-        gas_update("medicine_lot", existing_lot["id"], {
+    # ✅ เร็วขึ้น: search เฉพาะ medicine_id
+    rows = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(med_id))
+
+    existing = None
+    for lot in rows:
+        if str(lot.get("expire_date", "")).strip() == expire_date:
+            existing = lot
+            break
+
+    if existing:
+        new_qty_total = _to_int(existing.get("qty_total"), 0) + qty
+        new_qty_remain = _to_int(existing.get("qty_remain"), 0) + qty
+        new_price_per_lot = _to_float(existing.get("price_per_lot"), 0.0) + price
+        new_price_per_unit = (new_price_per_lot / new_qty_total) if new_qty_total > 0 else 0
+
+        upd = gas_update("medicine_lot", existing["id"], {
             "qty_total": new_qty_total,
             "qty_remain": new_qty_remain,
             "price_per_lot": new_price_per_lot,
-            "price_per_unit": new_price_per_unit,
-
-            # ✅ (แนะนำ) เผื่อ lot เก่าบางแถว item_name ยังว่าง จะได้เติมให้ด้วย
+            "price_per_unit": round(new_price_per_unit, 4),
             "item_name": item_name
         })
+        if not upd.get("ok"):
+            if _wants_json_response():
+                return jsonify({"success": False, "message": upd.get("message", "update failed")}), 500
+            return "บันทึกไม่สำเร็จ", 500
 
+        lot_obj = {
+            "id": existing.get("id"),
+            "lot_name": existing.get("lot_name"),
+            "expire_date": expire_date,
+            "qty_total": new_qty_total,
+            "qty_remain": new_qty_remain,
+            "price_per_lot": round(new_price_per_lot, 2),
+            "price_per_unit": round(new_price_per_unit, 4),
+        }
     else:
-        # สร้าง Lot ใหม่
-        lot_count = 0
-        if all_lots.get("ok"):
-            for lot in all_lots.get("data", []):
-                if str(lot.get("medicine_id", "")) == str(med_id):
-                    lot_count += 1
-
+        lot_count = len(rows)
         lot_name = f"LOT {lot_count + 1}"
         price_per_unit = price / qty if qty > 0 else 0
 
-        gas_append("medicine_lot", {
+        ap = gas_append("medicine_lot", {
             "medicine_id": med_id,
-            "item_name": item_name,   # ✅ (เพิ่ม) บันทึกชื่อยา/เวชภัณฑ์ลงคอลัมน์ใหม่
+            "item_name": item_name,
             "lot_name": lot_name,
             "expire_date": expire_date,
             "qty_total": qty,
             "qty_remain": qty,
             "price_per_lot": price,
-            "price_per_unit": price_per_unit
+            "price_per_unit": round(price_per_unit, 4)
         })
+
+        if not ap.get("ok"):
+            if _wants_json_response():
+                return jsonify({"success": False, "message": ap.get("message", "append failed")}), 500
+            return "บันทึกไม่สำเร็จ", 500
+
+        lot_id = ap.get("id")
+        lot_obj = {
+            "id": lot_id,
+            "lot_name": lot_name,
+            "expire_date": expire_date,
+            "qty_total": qty,
+            "qty_remain": qty,
+            "price_per_lot": round(price, 2),
+            "price_per_unit": round(price_per_unit, 4),
+        }
+
+    if _wants_json_response():
+        return jsonify({"success": True, "lot": lot_obj})
 
     return redirect(f"/medicine/{med_id}")
 
