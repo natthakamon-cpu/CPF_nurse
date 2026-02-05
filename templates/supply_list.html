@@ -297,9 +297,9 @@
         <a href="{{ url_for('medicine_type') }}" class="back-menu">⬅ ย้อนกลับ</a>
         </div>
 
-        {% if session.get('role') == 'admin' %}
+        {% if (session.get('role','')|lower) in ['admin','user'] %}
         <button type="button" class="add-btn" id="openAdd">
-            <i class="fa-solid fa-plus"></i> เพิ่มชื่อยา/เวชภัณฑ์
+        <i class="fa-solid fa-plus"></i> เพิ่มชื่อยา/เวชภัณฑ์
         </button>
         {% endif %}
 
@@ -314,7 +314,7 @@
         <div class="card-wrap">
             <a href="/medicine/{{ s.id }}" class="box">{{ s.name }}</a>
 
-            {% if session.get('role') == 'admin' %}
+            {% if (session.get('role','')|lower) in ['admin','user'] %}
             <form method="POST" action="/medicine/{{ s.id }}/delete"
                 onsubmit="return confirm('ยืนยันลบเวชภัณฑ์: {{ s.name }} ?');">
             <button type="submit" class="delete-btn" title="ลบ">
@@ -322,6 +322,7 @@
             </button>
             </form>
             {% endif %}
+
         </div>
         {% endfor %}
         </div>
