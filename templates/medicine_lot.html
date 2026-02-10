@@ -306,7 +306,7 @@
         {% for lot in lots %}
         <div class="lot-box" id="lot-{{ lot.id }}">
           <div class="lot-header">{{ lot.lot_name }}</div>
-          <div>วันหมดอายุ: <span class="js-expire">${lot.expire_date || "-"}</span></div>
+          <div>วันหมดอายุ: <span class="js-expire">{{ (lot.expire_date or "-") | e }}</span></div>
           <div>จำนวนทั้งหมด: <span class="js-qty-total">{{ lot.qty_total }}</span></div>
           <div>คงเหลือ: <span class="js-qty-remain">{{ lot.qty_remain }}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">{{ "%.2f"|format(lot.price_per_lot) }}</span> บาท</div>
@@ -369,7 +369,7 @@
       return `
         <div class="lot-box" id="lot-${id}">
           <div class="lot-header">${lot.lot_name || "-"}</div>
-          <div>วันหมดอายุ: <span class="js-expire">${lot.expire_date || "-"}</span></div>
+          <div>วันหมดอายุ: <span class="js-expire">{{ (lot.expire_date or "-") | e }}</span></div>
           <div>จำนวนทั้งหมด: <span class="js-qty-total">${lot.qty_total ?? 0}</span></div>
           <div>คงเหลือ: <span class="js-qty-remain">${lot.qty_remain ?? 0}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">${fmt2(lot.price_per_lot)}</span> บาท</div>
