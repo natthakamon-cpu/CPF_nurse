@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="th">
 
 <head>
@@ -26,13 +25,11 @@
       font-size: 24px;
     }
 
-    /* ================= HEADER ================= */
     .header {
       width: 100%;
       background: #ffffff;
       border-bottom: 1px solid #e0e0e0;
       padding: 14px 40px;
-
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -84,7 +81,6 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     }
 
-    /* ✅ เพิ่ม/แก้ให้ top-bar คุมตำแหน่งปุ่ม */
     .top-bar {
       display: flex;
       align-items: center;
@@ -92,13 +88,11 @@
       margin-bottom: 20px;
     }
 
-    /* ✅ แก้ปุ่มกลับ: ไม่ใช้ absolute แล้ว */
     .save-btn {
       position: static;
       display: inline-flex;
       align-items: center;
       gap: 10px;
-
       background: #28a745;
       color: #fff;
       padding: 10px 18px;
@@ -173,7 +167,6 @@
       font-size: 20px;
     }
 
-    /* ===== EDIT PAGE LAYOUT ===== */
     #page-edit form {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -198,23 +191,19 @@
       box-sizing: border-box;
     }
 
-    /* textarea เต็มแถว */
     #page-edit textarea {
       grid-column: 1 / -1;
     }
 
-    /* กลุ่มยา / เวชภัณฑ์ เต็มแถว */
     #page-edit .medicine-group {
       grid-column: 1 / -1;
     }
 
-    /* ตารางยา */
     #medicine_table th {
       background: #e3f2fd;
       color: #0d47a1;
     }
 
-    /* ===== RADIO ALLERGY (ใหญ่ขึ้น) ===== */
     .inline {
       grid-column: 1 / -1;
       display: flex;
@@ -234,7 +223,6 @@
       cursor: pointer;
     }
 
-    /* ===== BUTTON ZONE ===== */
     .edit-actions {
       grid-column: 1 / -1;
       display: flex;
@@ -273,7 +261,6 @@
       cursor: pointer;
     }
 
-    /* ================= FOOTER ================= */
     .footer {
       width: 100%;
       background: #dcdcdc;
@@ -284,7 +271,6 @@
       margin-top: 60px;
     }
 
-    /* คอลัมน์จัดการ: กันขึ้นบรรทัดใหม่ */
     th.col-actions,
     td.col-actions {
       white-space: nowrap;
@@ -292,7 +278,6 @@
       text-align: center;
     }
 
-    /* ห่อไอคอนเป็น flex ให้อยู่แถวเดียว */
     .action-wrap {
       display: flex;
       justify-content: center;
@@ -301,16 +286,13 @@
       flex-wrap: nowrap;
     }
 
-    /* ปุ่มไอคอน */
     .action-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-
       width: 38px;
       height: 38px;
       border-radius: 10px;
-
       cursor: pointer;
       user-select: none;
       line-height: 1;
@@ -325,7 +307,6 @@
       filter: saturate(1.2);
     }
 
-    /* ✅ Toast ไม่บล็อก UI */
     .toast {
       position: fixed;
       right: 24px;
@@ -361,13 +342,11 @@
       background: #2a2a2a;
     }
 
-    /* ✅ เอฟเฟกต์ตอนลบ */
     tr.removing {
       opacity: .45;
       filter: grayscale(1);
     }
 
-    /* ✅ กันผู้ใช้กดซ้ำขณะลบ */
     .action-btn.disabled {
       pointer-events: none;
       opacity: .55;
@@ -376,7 +355,6 @@
 </head>
 
 <body>
-  <!-- ===== HEADER ===== -->
   <div class="header">
     <div class="header-left">
       <i class="fa-solid fa-stethoscope"></i>
@@ -390,9 +368,7 @@
   </div>
 
   <div class="container">
-    <!-- ================= LIST ================= -->
     <div id="page-list" class="box page active">
-      <!-- ปุ่มกลับเมนู -->
       <div class="top-bar">
         <a href="/treatment_menu" class="save-btn">
           <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
@@ -400,11 +376,10 @@
       </div>
 
       <h2>ทะเบียนการรักษา</h2>
-      <input type="text" id="searchInput" class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่" onkeyup="filterTable()">
+      <input type="text" id="searchInput" class="search" placeholder="🔍 ค้นหาชื่อ หรือ วันที่/เวลา" onkeyup="filterTable()">
       <table id="recordTable"></table>
     </div>
 
-    <!-- ================= VIEW ================= -->
     <div id="page-view" class="box page">
       <div class="top-bar">
         <a href="/treatment_menu" class="save-btn">
@@ -417,7 +392,6 @@
       <button class="back-btn" onclick="back()">⬅ กลับหน้าทะเบียน</button>
     </div>
 
-    <!-- ================= EDIT ================= -->
     <div id="page-edit" class="box page">
       <div class="top-bar">
         <a href="/treatment_menu" class="save-btn">
@@ -430,8 +404,9 @@
       <form id="editForm">
         <input type="hidden" id="edit_id">
 
-        <label>วันที่เข้ารับการรักษา</label>
-        <input type="date" name="visit_date" id="edit_date" required>
+        <!-- PATCH: datetime-local -->
+        <label>วันที่และเวลาเข้ารับการรักษา</label>
+        <input type="datetime-local" name="visit_date" id="edit_date" step="1" required>
 
         <label>ชื่อ - นามสกุล ผู้ป่วย</label>
         <input type="text" name="patient_name" id="edit_name" required>
@@ -507,7 +482,6 @@
         <label>รายละเอียดการแพ้ยา</label>
         <textarea name="allergy_detail" id="edit_allergy_detail" rows="2"></textarea>
 
-        <!-- ===== ความคิดเห็นของแพทย์ ===== -->
         <div style="grid-column:1 / -1; margin-top:30px;">
           <label style="font-size:26px; font-weight:700;">
             ความคิดเห็นของแพทย์
@@ -568,11 +542,35 @@
         return symptomLabelMap[code] || code;
       }
 
-      /* ===============================
-         TABLE RENDER (SQLite)
-      ================================ */
+      // ===== PATCH: helper datetime-local =====
+      function pad2(n) { return String(n).padStart(2, "0"); }
+      function nowDateTimeLocal() {
+        const d = new Date();
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+      }
+      function toDateTimeLocalValue(raw) {
+        if (!raw) return "";
+        const s = String(raw).trim();
+
+        // YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+          return `${s}T00:00:00`;
+        }
+
+        // YYYY-MM-DD HH:mm[:ss]
+        if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+          return s.replace(" ", "T").length === 16 ? s.replace(" ", "T") + ":00" : s.replace(" ", "T");
+        }
+
+        // ISO string
+        const d = new Date(s);
+        if (isNaN(d.getTime())) return "";
+
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+      }
+
       let allRecords = [];
-      const deletingIds = new Set(); // ✅ กันกดลบซ้ำ
+      const deletingIds = new Set();
 
       function safeText(v) {
         return (v === null || v === undefined || v === "") ? "-" : v;
@@ -594,14 +592,13 @@
         }
       }
 
-      // ✅ เร็วขึ้น: build string ครั้งเดียว ไม่ใช้ innerHTML += ใน loop
       function renderTable(records) {
         const table = document.getElementById('recordTable');
 
         let html = `
           <tr>
             <th>ลำดับ</th>
-            <th>วันที่</th>
+            <th>วันที่/เวลา</th>
             <th>ชื่อ - นามสกุล</th>
             <th>กลุ่มอาการ</th>
             <th class="col-actions">จัดการ</th>
@@ -623,7 +620,7 @@
           html += `
             <tr data-id="${r.id}">
               <td>${i + 1}</td>
-              <td>${safeText(r.visit_date)}</td>
+              <td>${safeText(r.visit_date_display || r.visit_date)}</td>
               <td>${safeText(r.patient_name)}</td>
               <td>${symptomLabel(r.symptom_group)}</td>
               <td class="col-actions">
@@ -640,13 +637,9 @@
         table.innerHTML = html;
       }
 
-      /* ===============================
-         LOAD LIST (SQLite)
-      ================================ */
       async function loadRecords() {
         const res = await fetch("/api/treatment_list", { cache: "no-store" });
         allRecords = await res.json();
-        // ✅ ถ้าผู้ใช้พิมพ์ค้นหาอยู่ ให้ render ตาม filter ทันที
         renderTable(getFilteredRecordsFromInput());
       }
 
@@ -666,7 +659,8 @@
 
         return allRecords.filter(r =>
           (r.patient_name || "").toLowerCase().includes(q) ||
-          (r.visit_date || "").includes(q) ||
+          (r.visit_date_display || "").toLowerCase().includes(q) ||
+          (r.visit_date_raw || "").toLowerCase().includes(q) ||
           formatMeds(r.medicine).toLowerCase().includes(q)
         );
       }
@@ -675,7 +669,6 @@
         renderTable(getFilteredRecordsFromInput());
       }
 
-      // ✅ เร็ว: renumber เฉพาะที่แสดงอยู่ (ไม่ rebuild ทั้งตาราง)
       function renumberVisibleRows() {
         const rows = document.querySelectorAll("#recordTable tr[data-id]");
         rows.forEach((tr, idx) => {
@@ -684,18 +677,12 @@
         });
       }
 
-      /* ===============================
-         PAGE SWITCH
-      ================================ */
       function switchPage(id) {
         document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
         document.getElementById(id).classList.add("active");
       }
       function back() { switchPage("page-list"); }
 
-      /* ===============================
-         VIEW (SQLite)
-      ================================ */
       function viewRecord(id) {
         fetch(`/api/treatment/${id}`, { cache: "no-store" })
           .then(res => res.json())
@@ -704,7 +691,7 @@
             const d = r.data;
 
             document.getElementById("viewBox").innerHTML = `
-              <p><b>วันที่เข้ารับการรักษา:</b> ${safeText(d.visit_date)}</p>
+              <p><b>วันที่และเวลาเข้ารับการรักษา:</b> ${safeText(d.visit_date_display || d.visit_date)}</p>
               <p><b>ชื่อ - นามสกุล ผู้ป่วย:</b> ${safeText(d.patient_name)}</p>
               <p><b>แผนก:</b> ${safeText(d.department)}</p>
               <p><b>กลุ่มอาการ:</b> ${symptomLabel(d.symptom_group)}</p>
@@ -719,9 +706,6 @@
           });
       }
 
-      /* ===============================
-         EDIT
-      ================================ */
       let editMedicines = [];
 
       const edit_id = document.getElementById("edit_id");
@@ -768,7 +752,7 @@
             const d = r.data;
 
             edit_id.value = d.id;
-            edit_date.value = d.visit_date || "";
+            edit_date.value = toDateTimeLocalValue(d.visit_date_input || d.visit_date_raw || d.visit_date) || nowDateTimeLocal();
             edit_name.value = d.patient_name || "";
             edit_department.value = d.department || "";
             edit_symptom_group.value = d.symptom_group || "";
@@ -794,23 +778,18 @@
           });
       }
 
-      /* ===============================
-         DELETE (SQLite)  ✅ เร็วขึ้นมาก
-      ================================ */
       async function deleteRecord(id) {
-        if (deletingIds.has(id)) return; // กันกดซ้ำ
+        if (deletingIds.has(id)) return;
         if (!confirm("ยืนยันการลบข้อมูลนี้?")) return;
 
         deletingIds.add(id);
 
-        // --- สำรองข้อมูลไว้เผื่อ rollback ---
         const backupAll = allRecords.slice();
         const row = document.querySelector(`#recordTable tr[data-id="${id}"]`);
         const parent = row ? row.parentNode : null;
         const nextEl = row ? row.nextElementSibling : null;
         const rowHTML = row ? row.outerHTML : null;
 
-        // --- ทำ UI ให้ “หายทันที” ---
         if (row) {
           row.classList.add("removing");
           const delBtn = row.querySelector(".action-btn.danger");
@@ -819,19 +798,15 @@
             delBtn.textContent = "⏳";
             delBtn.title = "กำลังลบ...";
           }
-          // ลบออกจาก DOM ทันที (ไม่ rebuild ทั้งตาราง)
           row.remove();
           renumberVisibleRows();
         }
 
-        // อัปเดต state ใน memory ทันที
         allRecords = allRecords.filter(r => Number(r.id) !== Number(id));
-
         showToast("กำลังลบ...", "info", 900);
 
-        // --- ยิง API ลบจริง (ไม่รอ UI) ---
         const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 12000); // 12s กันค้าง
+        const t = setTimeout(() => controller.abort(), 12000);
 
         try {
           const res = await fetch(`/api/treatment/delete/${id}`, {
@@ -851,16 +826,13 @@
           clearTimeout(t);
           console.error(err);
 
-          // rollback state
           allRecords = backupAll;
 
-          // rollback DOM เฉพาะแถวเดิม (ถ้ามี)
           if (parent && rowHTML) {
             if (nextEl) nextEl.insertAdjacentHTML("beforebegin", rowHTML);
             else parent.insertAdjacentHTML("beforeend", rowHTML);
             renumberVisibleRows();
           } else {
-            // fallback: re-render เฉพาะกรณีจำเป็น
             renderTable(getFilteredRecordsFromInput());
           }
 
@@ -870,16 +842,10 @@
         }
       }
 
-      /* ===============================
-         INIT
-      ================================ */
       document.addEventListener("DOMContentLoaded", () => {
         loadRecords();
       });
 
-      /* ===============================
-         ADD MEDICINE IN EDIT (use med_id + lots)
-      ================================ */
       const medSelect = document.getElementById("medicine_select");
       const medOther = document.getElementById("medicine_other");
       const lotSelect = document.getElementById("lot_select");
@@ -983,9 +949,6 @@
         lotSelect.innerHTML = '<option value="">Lot</option>';
       }
 
-      /* ===============================
-         SUBMIT EDIT
-      ================================ */
       document.getElementById("editForm").addEventListener("submit", e => {
         e.preventDefault();
 
@@ -994,7 +957,7 @@
           headers: { "Content-Type": "application/json" },
           cache: "no-store",
           body: JSON.stringify({
-            visit_date: edit_date.value,
+            visit_date: edit_date.value, // PATCH: datetime-local
             patient_name: edit_name.value,
             department: edit_department.value,
             symptom_group: edit_symptom_group.value,
@@ -1019,7 +982,6 @@
       });
     </script>
 
-    <!-- ===== FOOTER ===== -->
     <div class="footer">
       © 2026 Safety Officer, CPF Khon Kaen Feedmill
     </div>
