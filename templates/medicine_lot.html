@@ -284,15 +284,14 @@
     <div class="add-lot-box">
       <form id="addLotForm" method="post" action="/medicine/{{ med.id }}/add_lot">
         <input type="hidden" name="item_name" value="{{ med.name }}">
-        <label>วันหมดอายุ</label>
-        <input type="date" name="expire_date" required>
+        <label>วันหมดอายุ (ไม่บังคับ)</label>
+        <input type="date" name="expire_date">
 
         <label>จำนวนที่เพิ่ม</label>
         <input type="number" name="qty" min="1" required>
 
         <label>ราคา / Lot (บาท)</label>
-        <input type="number" name="price" min="0.01" step="0.01" inputmode="decimal" placeholder="เช่น 3.25" required>
-
+        <input type="number" name="price" min="0.01" step="any" inputmode="decimal" required>
         <button id="saveLotBtn" type="submit">💾 บันทึก Lot</button>
       </form>
 
@@ -307,7 +306,7 @@
         {% for lot in lots %}
         <div class="lot-box" id="lot-{{ lot.id }}">
           <div class="lot-header">{{ lot.lot_name }}</div>
-          <div>วันหมดอายุ: <span class="js-expire">{{ lot.expire_date }}</span></div>
+          <div>วันหมดอายุ: <span class="js-expire">${lot.expire_date || "-"}</span></div>
           <div>จำนวนทั้งหมด: <span class="js-qty-total">{{ lot.qty_total }}</span></div>
           <div>คงเหลือ: <span class="js-qty-remain">{{ lot.qty_remain }}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">{{ "%.2f"|format(lot.price_per_lot) }}</span> บาท</div>
