@@ -347,6 +347,15 @@
       return x.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
     function normalizePrice(v){
       return String(v ?? "").trim().replace(",", ".");
     }
@@ -366,15 +375,16 @@
 
     function renderCard(lot){
       const id = lot.id ?? "";
+      const expire = (lot.expire_date && String(lot.expire_date).trim()) ? lot.expire_date : "-";
       return `
-        <div class="lot-box" id="lot-${id}">
-          <div class="lot-header">${lot.lot_name || "-"}</div>
-          <div>วันหมดอายุ: <span class="js-expire">{{ (lot.expire_date or "-") | e }}</span></div>
-          <div>จำนวนทั้งหมด: <span class="js-qty-total">${lot.qty_total ?? 0}</span></div>
-          <div>คงเหลือ: <span class="js-qty-remain">${lot.qty_remain ?? 0}</span></div>
+        <div class="lot-box" id="lot-${esc(id)}">
+          <div class="lot-header">${esc(lot.lot_name || "-")}</div>
+          <div>วันหมดอายุ: <span class="js-expire">${esc(expire)}</span></div>
+          <div>จำนวนทั้งหมด: <span class="js-qty-total">${esc(lot.qty_total ?? 0)}</span></div>
+          <div>คงเหลือ: <span class="js-qty-remain">${esc(lot.qty_remain ?? 0)}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">${fmt2(lot.price_per_lot)}</span> บาท</div>
           <div>ราคา / หน่วย: <span class="js-price-unit">${fmt2(lot.price_per_unit)}</span> บาท</div>
-          <form method="post" action="/lot/${id}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+          <form method="post" action="/lot/${esc(id)}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
             <button class="delete-btn">🗑 ลบ Lot</button>
           </form>
         </div>
@@ -437,6 +447,7 @@
     });
   })();
   </script>
+
 
 </body>
 
