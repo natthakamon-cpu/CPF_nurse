@@ -306,7 +306,7 @@
         {% for lot in lots %}
         <div class="lot-box" id="lot-{{ lot.id }}">
           <div class="lot-header">{{ lot.lot_name }}</div>
-          <div>วันหมดอายุ: <span class="js-expire">{{ (lot.expire_date or "-") | e }}</span></div>
+          <div>วันหมดอายุ: <span class="js-expire">{{ (((lot.expire_date or "").split("T")[0].split(" ")[0]) or "-") | e }}</span></div>
           <div>จำนวนทั้งหมด: <span class="js-qty-total">{{ lot.qty_total }}</span></div>
           <div>คงเหลือ: <span class="js-qty-remain">{{ lot.qty_remain }}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">{{ "%.2f"|format(lot.price_per_lot) }}</span> บาท</div>
@@ -356,6 +356,15 @@
         .replaceAll("'","&#39;");
     }
 
+    // ✅ แสดงวันหมดอายุเฉพาะ YYYY-MM-DD
+    function fmtExpire(v){
+      const s = String(v ?? "").trim();
+      if (!s) return "-";
+      const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (m) return m[1];
+      return (s.split("T")[0].split(" ")[0] || "-");
+    }
+
     function normalizePrice(v){
       return String(v ?? "").trim().replace(",", ".");
     }
@@ -374,17 +383,16 @@
     }
 
     function renderCard(lot){
-      const id = lot.id ?? "";
-      const expire = (lot.expire_date && String(lot.expire_date).trim()) ? lot.expire_date : "-";
+      const id = esc(lot.id ?? "");
       return `
-        <div class="lot-box" id="lot-${esc(id)}">
+        <div class="lot-box" id="lot-${id}">
           <div class="lot-header">${esc(lot.lot_name || "-")}</div>
-          <div>วันหมดอายุ: <span class="js-expire">${esc(expire)}</span></div>
+          <div>วันหมดอายุ: <span class="js-expire">${esc(fmtExpire(lot.expire_date))}</span></div>
           <div>จำนวนทั้งหมด: <span class="js-qty-total">${esc(lot.qty_total ?? 0)}</span></div>
           <div>คงเหลือ: <span class="js-qty-remain">${esc(lot.qty_remain ?? 0)}</span></div>
           <div>ราคา / Lot: <span class="js-price-lot">${fmt2(lot.price_per_lot)}</span> บาท</div>
           <div>ราคา / หน่วย: <span class="js-price-unit">${fmt2(lot.price_per_unit)}</span> บาท</div>
-          <form method="post" action="/lot/${esc(id)}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
+          <form method="post" action="/lot/${id}/delete" onsubmit="return confirm('ยืนยันการลบ Lot นี้ ?');">
             <button class="delete-btn">🗑 ลบ Lot</button>
           </form>
         </div>
@@ -447,6 +455,7 @@
     });
   })();
   </script>
+
 
 
 </body>
