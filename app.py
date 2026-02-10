@@ -154,37 +154,18 @@ def visit_date_for_input(value):
 # GOOGLE SHEETS API HELPERS
 # ============================================
 
-# cache หลักของ list
 _GAS_CACHE = {}
-
-# cache ของ search(table, field, value)
-_GAS_SEARCH_CACHE = {}
-
-# cache เฉพาะรายชื่อยาแยกตามกลุ่ม (เพื่อหน้า /medicine/list/<group>)
-_GROUP_MEDS_CACHE = {}
 
 
 def gas_cache_invalidate(table=None):
     """ล้าง cache เพื่อให้ข้อมูลใหม่แสดงทันทีหลังมีการเขียนข้อมูล"""
     if table is None:
         _GAS_CACHE.clear()
-        _GAS_SEARCH_CACHE.clear()
-        _GROUP_MEDS_CACHE.clear()
         return
-
-    # ลบเฉพาะ list cache ของ table นั้น ๆ
+    # ลบเฉพาะ key ของ table นั้น ๆ
     for k in list(_GAS_CACHE.keys()):
         if k[0] == table:
             _GAS_CACHE.pop(k, None)
-
-    # ลบเฉพาะ search cache ของ table นั้น ๆ
-    for k in list(_GAS_SEARCH_CACHE.keys()):
-        if k[0] == table:
-            _GAS_SEARCH_CACHE.pop(k, None)
-
-    # medicine/other_item เปลี่ยน -> รายการหน้า group/list อาจเปลี่ยน
-    if table in ("medicine", "other_item"):
-        _GROUP_MEDS_CACHE.clear()
 
 
 def gas_list_raw(table, limit=1000):
@@ -256,7 +237,7 @@ def gas_get(table, row_id):
 
 
 def gas_search(table, field, value):
-    """ค้นหาข้อมูลตามฟิลด์ (RAW no-cache)"""
+    """ค้นหาข้อมูลตามฟิลด์"""
     try:
         r = requests.get(GAS_URL, params={
             "action": "search",
@@ -269,24 +250,6 @@ def gas_search(table, field, value):
     except Exception as e:
         print(f"gas_search error: {e}")
         return {"ok": False, "data": [], "message": str(e)}
-
-
-def gas_search_cached(table, field, value, ttl=15):
-    """
-    cache search ระยะสั้น เพื่อลดรอบเรียก GAS ซ้ำ ๆ โดยเฉพาะหน้า list
-    """
-    key = (table, str(field).strip(), str(value).strip())
-    now = time.time()
-
-    if key in _GAS_SEARCH_CACHE:
-        ts, res = _GAS_SEARCH_CACHE[key]
-        if now - ts < ttl:
-            return res
-
-    res = gas_search(table, field, value)
-    if isinstance(res, dict) and res.get("ok"):
-        _GAS_SEARCH_CACHE[key] = (now, res)
-    return res
 
 
 def gas_append(table, payload):
@@ -399,10 +362,10 @@ def _wants_json_response():
 def _get_lots_by_field_fast(table, field, value, limit=5000):
     """
     เร็วกว่า list ทั้งตาราง:
-    - พยายามใช้ gas_search ก่อน (แบบ cache ระยะสั้น)
+    - พยายามใช้ gas_search ก่อน
     - ถ้าไม่ได้ ค่อย fallback ไป list + filter
     """
-    sr = gas_search_cached(table, field, value, ttl=10)
+    sr = gas_search(table, field, value)
     if isinstance(sr, dict) and sr.get("ok"):
         rows = _unwrap_rows(sr)
         if isinstance(rows, list):
@@ -415,51 +378,6 @@ def _get_lots_by_field_fast(table, field, value, limit=5000):
         if str(r.get(field, "")).strip() == str(value).strip():
             out.append(r)
     return out
-
-
-def get_medicines_by_group_fast(group, ttl=20):
-    """
-    helper สำหรับหน้า /medicine/list/<group>
-    - ใช้ group cache
-    - ใช้ gas_search(group_name) ก่อน
-    - fallback gas_list + filter
-    """
-    g = str(group or "").strip()
-    if not g:
-        return []
-
-    key = norm_key(g)
-    now = time.time()
-
-    if key in _GROUP_MEDS_CACHE:
-        ts, meds = _GROUP_MEDS_CACHE[key]
-        if now - ts < ttl:
-            return meds
-
-    meds = []
-
-    # พยายาม search ก่อน
-    sr = gas_search_cached("medicine", "group_name", g, ttl=ttl)
-    if isinstance(sr, dict) and sr.get("ok"):
-        for m in _unwrap_rows(sr):
-            m_type = str(m.get("type", "")).strip().lower()
-            m_group = str(m.get("group_name", "")).strip()
-            if m_type == "medicine" and m_group == g:
-                meds.append(m)
-
-    # fallback เผื่อ GAS action=search ไม่ได้ผลบางช่วง
-    if not meds:
-        res = gas_list("medicine", 5000)
-        if res.get("ok"):
-            for m in res.get("data", []):
-                m_type = str(m.get("type", "")).strip().lower()
-                m_group = str(m.get("group_name", "")).strip()
-                if m_type == "medicine" and m_group == g:
-                    meds.append(m)
-
-    meds.sort(key=lambda x: str(x.get("name", "")).strip().lower())
-    _GROUP_MEDS_CACHE[key] = (now, meds)
-    return meds
 
 
 # ============================================
@@ -687,7 +605,7 @@ def supply_add():
 # MEDICINE LIST
 # ============================================
 
-@app.route("/medicine/list/<path:group>")
+@app.route("/medicine/list/<group>")
 def medicine_list(group):
     group = unquote(group).strip()
 
@@ -697,25 +615,16 @@ def medicine_list(group):
         items.sort(key=lambda x: str(x.get("name", "")).strip().lower())
         return render_template("medicine_other.html", group=group, items=items)
 
-    meds = get_medicines_by_group_fast(group, ttl=25)
+    res = gas_list("medicine", 5000)
+    meds = []
+    if res.get("ok"):
+        for m in res.get("data", []):
+            m_type = str(m.get("type", "")).strip().lower()
+            m_group = str(m.get("group_name", "")).strip()
+            if m_type == "medicine" and m_group == group:
+                meds.append(m)
+
     return render_template("medicine_list.html", medicines=meds, meds=meds, group=group)
-
-
-@app.get("/api/prefetch/medicine_group/<path:group>")
-@login_required
-def api_prefetch_medicine_group(group):
-    """
-    endpoint สำหรับ warm cache ตอน hover/touch link ในหน้า medicine_group
-    """
-    group = unquote(group).strip()
-
-    if group == "อื่นๆ":
-        res = gas_list("other_item", 5000)
-        rows = _unwrap_rows(res)
-        return jsonify({"ok": True, "group": group, "count": len(rows)})
-
-    meds = get_medicines_by_group_fast(group, ttl=30)
-    return jsonify({"ok": True, "group": group, "count": len(meds)})
 
 
 @app.route("/other/add_item", methods=["POST"])
@@ -771,10 +680,11 @@ def other_delete_item(item_id):
 
     item_name = str(item_res["data"].get("name", "")).strip()
 
-    lots_res = _get_lots_by_field_fast("other_lot", "item_name", item_name, limit=5000)
-    for l in lots_res:
-        if str(l.get("item_name", "")).strip().lower() == item_name.lower():
-            gas_delete("other_lot", l.get("id"))
+    lots_res = gas_list("other_lot", 5000)
+    if lots_res.get("ok"):
+        for l in lots_res.get("data", []):
+            if str(l.get("item_name", "")).strip().lower() == item_name.lower():
+                gas_delete("other_lot", l.get("id"))
 
     gas_delete("other_item", item_id)
     return redirect("/medicine/list/" + quote("อื่นๆ"))
@@ -791,9 +701,11 @@ def medicine_delete(med_id):
         group_name = str(med_res["data"].get("group_name", "")).strip()
         mtype = str(med_res["data"].get("type", "")).strip().lower()
 
-    lots = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(med_id), limit=10000)
-    for l in lots:
-        gas_delete("medicine_lot", l.get("id"))
+    lots_res = gas_list("medicine_lot", 5000)
+    if lots_res.get("ok"):
+        for l in lots_res.get("data", []):
+            if str(l.get("medicine_id", "")) == str(med_id):
+                gas_delete("medicine_lot", l.get("id"))
 
     gas_delete("medicine", med_id)
 
@@ -810,7 +722,7 @@ def medicine_delete(med_id):
 def other_item_detail(item_name):
     item_name = norm_text(unquote(item_name))
 
-    check = gas_search_cached("other_item", "name", item_name, ttl=20)
+    check = gas_search("other_item", "name", item_name)
     exists = False
     if isinstance(check, dict) and check.get("ok"):
         rows = _unwrap_rows(check)
@@ -948,8 +860,12 @@ def medicine_detail(med_id):
 
     med = med_res["data"]
 
-    lots = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(med_id), limit=10000)
-    lots = [l for l in lots if str(l.get("medicine_id", "")) == str(med_id)]
+    all_lots = gas_list("medicine_lot", 5000)
+    lots = []
+    if all_lots.get("ok"):
+        for l in all_lots.get("data", []):
+            if str(l.get("medicine_id", "")) == str(med_id):
+                lots.append(l)
     lots.sort(key=lambda x: x.get("expire_date", ""))
 
     mtype = str(med.get("type", "")).strip().lower()
@@ -1107,25 +1023,11 @@ def medicine_add():
     if not group or not name:
         return "กรอกข้อมูลไม่ครบ", 400
 
-    # ใช้ search+cache ก่อนเพื่อลด list ใหญ่
-    maybe_dup = False
-    sr = gas_search_cached("medicine", "group_name", group, ttl=20)
-    if isinstance(sr, dict) and sr.get("ok"):
-        for m in _unwrap_rows(sr):
+    res = gas_list("medicine", 5000)
+    if res.get("ok"):
+        for m in res.get("data", []):
             if norm_text(m.get("group_name", "")) == group and norm_text(m.get("name", "")).lower() == name.lower():
-                maybe_dup = True
-                break
-
-    if maybe_dup:
-        return redirect("/medicine/list/" + quote(group))
-
-    # fallback safety
-    if not maybe_dup:
-        res = gas_list("medicine", 5000)
-        if res.get("ok"):
-            for m in res.get("data", []):
-                if norm_text(m.get("group_name", "")) == group and norm_text(m.get("name", "")).lower() == name.lower():
-                    return redirect("/medicine/list/" + quote(group))
+                return redirect("/medicine/list/" + quote(group))
 
     payload = {
         "type": mtype,
@@ -1453,16 +1355,8 @@ def api_medicine_list():
 @app.route("/api/medicine_id")
 def api_medicine_id():
     name = (request.args.get("name") or "").strip()
-
-    # ลอง search ตามชื่อก่อน (บาง GAS ไม่รองรับตรงเป๊ะ จึง fallback)
-    sr = gas_search_cached("medicine", "name", name, ttl=20)
-    if isinstance(sr, dict) and sr.get("ok"):
-        target = norm_key(name)
-        for m in _unwrap_rows(sr):
-            if norm_key(m.get("name", "")) == target:
-                return jsonify({"medicine_id": m.get("id")})
-
     res = gas_list("medicine", 1000)
+
     if res.get("ok"):
         target = norm_key(name)
         for m in res.get("data", []):
@@ -1479,22 +1373,6 @@ def api_medicine_items():
 
     if not group and not code:
         return jsonify({"items": []})
-
-    # เคสปกติจาก treatment_form จะส่ง group มา -> ใช้ cache ต่อกลุ่มโดยตรง
-    if group and not code:
-        meds = get_medicines_by_group_fast(group, ttl=25)
-        names = []
-        seen = set()
-        for r in meds:
-            name = (r.get("name") or "").strip()
-            if not name:
-                continue
-            k = name.lower()
-            if k not in seen:
-                seen.add(k)
-                names.append(name)
-        names.sort(key=lambda s: s.lower())
-        return jsonify({"items": names})
 
     rows = _unwrap_rows(gas_list("medicine", limit=5000))
 
@@ -1535,17 +1413,18 @@ def api_medicine_lots():
     if not medicine_id:
         return jsonify({"lots": []})
 
-    rows = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(medicine_id), limit=10000)
+    all_lots = gas_list("medicine_lot", 5000)
     lots = []
-    for r in rows:
-        if str(r.get("medicine_id", "")) == str(medicine_id):
-            if int(r.get("qty_remain", 0) or 0) > 0:
-                lots.append({
-                    "id": r.get("id"),
-                    "name": r.get("lot_name"),
-                    "remain": r.get("qty_remain"),
-                    "price": r.get("price_per_unit")
-                })
+    if all_lots.get("ok"):
+        for r in all_lots.get("data", []):
+            if str(r.get("medicine_id", "")) == str(medicine_id):
+                if int(r.get("qty_remain", 0) or 0) > 0:
+                    lots.append({
+                        "id": r.get("id"),
+                        "name": r.get("lot_name"),
+                        "remain": r.get("qty_remain"),
+                        "price": r.get("price_per_unit")
+                    })
 
     lots.sort(key=lambda x: str(x.get("name", "")))
     return jsonify({"lots": lots})
