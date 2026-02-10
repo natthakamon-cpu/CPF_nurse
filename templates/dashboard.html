@@ -559,197 +559,36 @@
 
 
   <script>
-
-    /* ===== MENU ===== */
-    function openSection(name, el) {
-      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-      el.classList.add('active');
-
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
-      document.getElementById(name).classList.add('show');
-
-      document.getElementById('backBtn').style.display = name !== 'top5' ? 'block' : 'none';
-
-      // ✅ ถ้าเข้าแท็บ "กราฟรายเดือน" ให้เริ่มที่ ม.ค เสมอ
-      if (name === "month") {
-        currentMonth = 1;
-      }
-
-      setupScroll(name);
-
-      // ✅ สั่ง render ให้ถูกแท็บ
-      if (name === "month") {
-        renderTop5Month(currentMonth);
-        renderMonthCharts(currentYear, currentMonth);
-      }
-
-      if (name === "year") {
-        renderYearTop5();
-        renderYearCharts(currentYear);
-      }
-
-      if (name === "cost") {
-        ensureCostReady();
-      }
+    // ================= GLOBAL =================
+    if (window.Chart) {
+      Chart.defaults.animation = false;
+      Chart.defaults.responsive = true;
     }
 
-    function goBack() { document.querySelectorAll('.menu-item')[0].click(); }
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth() + 1; // เริ่มเดือนปัจจุบัน
 
-    /* ===== SCROLL ===== */
-    function setupScroll(type) {
-      const bar = document.getElementById("scrollBar");
-      bar.innerHTML = "";
+    let allItems = [];
+    let costCache = null;
 
-      if (type === "year") {
-        bar.style.display = "none";
-        return;
-      }
-
-      bar.style.display = "block";
-
-      const activeIndex = Math.max(0, (currentMonth || 1) - 1);
-
-      ["ม.ค", "ก.พ", "มี.ค", "เม.ย", "พ.ค", "มิ.ย", "ก.ค", "ส.ค", "ก.ย", "ต.ค", "พ.ย", "ธ.ค"]
-        .forEach((m, i) => {
-          bar.innerHTML += `<span class="scroll-item ${i === activeIndex ? 'active' : ''}"
-        onclick="changeMonth(${i},this)">${m}</span>`;
-        });
-    }
-
-
-    /* ================= COST DATA ================= */
-    let costCache = null;          // เก็บข้อมูลทั้งปี
-    let monthlyCostChart = null;   // chart instance
-
-    const monthLabels = ["ม.ค", "ก.พ", "มี.ค", "เม.ย", "พ.ค", "มิ.ย", "ก.ค", "ส.ค", "ก.ย", "ต.ค", "พ.ย", "ธ.ค"];
-
-    function fmtBaht(n) {
-      const v = Number(n || 0);
-      return v.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " บาท";
-    }
-
-    async function loadCostYear(year) {
-      try {
-        const res = await fetch(`/api/dashboard/monthly_cost?year=${year}`);
-        const json = await res.json();
-        costCache = json.months || [];
-      } catch (e) {
-        console.error("โหลดค่าใช้จ่ายล้มเหลว:", e);
-        costCache = [];
-      }
-    }
-
-    function updateCostSummary(monthIndex0) { // 0-11
-      const m = (costCache && costCache[monthIndex0])
-        ? costCache[monthIndex0]
-        : { drug: 0, supply: 0, other: 0, total: 0 };
-
-      document.getElementById("sumDrug").innerText   = fmtBaht(m.drug);
-      document.getElementById("sumSupply").innerText = fmtBaht(m.supply);
-      document.getElementById("sumOther").innerText  = fmtBaht(m.other);
-      document.getElementById("sumTotal").innerText  = fmtBaht(m.total);
-    }
-
-
-    function renderCostChart(){
-      const drugData   = (costCache||[]).map(x => x.drug || 0);
-      const supplyData = (costCache||[]).map(x => x.supply || 0);
-      const otherData  = (costCache||[]).map(x => x.other || 0);
-
-      const ctx = document.getElementById("monthlyCostChart");
-
-      if(monthlyCostChart){
-        monthlyCostChart.destroy();
-      }
-
-      monthlyCostChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: monthLabels,
-          datasets: [
-            { label: "ค่ายา", data: drugData, backgroundColor: "#90CAF9" },
-            { label: "ค่าเวชภัณฑ์", data: supplyData, backgroundColor: "#e38cf3" },
-            { label: "ค่าอื่นๆ", data: otherData, backgroundColor: "#69fff0" }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } }
-        }
-      });
-    }
-
-
-    /* ✅ เรียกเมื่อเข้าแท็บ cost หรือเปลี่ยนปี */
-    async function ensureCostReady() {
-      if (!costCache) {
-        await loadCostYear(currentYear);
-        renderCostChart();
-      }
-      // currentMonth เป็น 1-12
-      updateCostSummary(currentMonth - 1);
-    }
-  </script>
-
-
-  <script>
-    /* ================== DASHBOARD DATA ================== */
-    /* ✅ GLOBAL STATE เดือน / ปี ที่เลือก */
-    let currentMonth = 1;
-    let currentYear = new Date().getFullYear(); // ✅ ปีจริง เช่น 2026
-
-
-    /* ================== CHANGE MONTH (ตัวเดียวจบ) ================== */
-    function changeMonth(i, el) {
-
-      // active UI
-      document.querySelectorAll('.scroll-item')
-        .forEach(m => m.classList.remove('active'));
-      el.classList.add('active');
-
-      // แปลง index → เดือนจริง
-      currentMonth = i + 1;
-
-
-      // โหลดตารางยา / เวชภัณฑ์
-      loadDrugTable(currentMonth, currentYear);
-
-      // ถ้าอยู่หน้า cost → สรุปค่าใช้จ่าย
-      if (document.getElementById("cost").classList.contains("show")) {
-        ensureCostReady();           // โหลดปี + อัปเดตตัวเลขเดือนที่เลือก
-      }
-
-
-      // ถ้าอยู่หน้า month → top5 รายเดือน
-      if (document.getElementById("month").classList.contains("show")) {
-        renderTop5Month(currentMonth);
-        renderMonthCharts(currentYear, currentMonth);
-      }
-
-    }
-    const palette = [
-      '#A7C7E7', '#B5EAD7', '#FFDAC1', '#E2CFEA', '#CDB4DB',
-      '#FFC8DD', '#BDE0FE', '#D0F4DE', '#F1FAEE', '#FAEDCD'
-    ];
-
-    const departments = [
-      "อสร", "คลังวัตถุดิบ", "ห้องปฏิบัติการ", "วิศวกรรม", "บริหาร",
-      "ดิจิตอล", "ผู้รับเหมา", "อื่นๆ", "ธุรการ", "ผลิตอาหารสัตว์"
-    ];
-
-    const diseases = [
-      "ระบบทางเดินหายใจ", "ระบบย่อยอาหาร", "กล้ามเนื้อ", "ระบบสมอง", "ผิวหนัง",
-      "อายุรกรรม", "ระบบขับถ่าย", "ระบบสืบพันธุ์", "ตา หู ช่องปาก", "อุบัติเหตุ", "อื่นๆ"
-    ];
-
-    function rand(len, max) {
-      return Array.from({ length: len }, () => Math.floor(Math.random() * max) + 20);
-    }
-
-    /* ================== MONTH CHART (REAL DATA) ================== */
+    let top5MonthChart = null;
     let deptChart = null;
     let diseaseChart = null;
+    let yearTop5Chart = null;
+    let yearDeptChart = null;
+    let yearDiseaseChart = null;
+    let monthlyCostChart = null;
+
+    let monthReqToken = 0;
+    let yearReqToken = 0;
+    let monthAbortCtrl = null;
+    let yearAbortCtrl = null;
+
+    const monthBundleCache = new Map();
+    const yearBundleCache = new Map();
+    const costYearCache = new Map();
+
+    const monthLabels = ["ม.ค", "ก.พ", "มี.ค", "เม.ย", "พ.ค", "มิ.ย", "ก.ค", "ส.ค", "ก.ย", "ต.ค", "พ.ย", "ธ.ค"];
 
     const deptMaster = [
       "อสร", "คลังวัตถุดิบ", "ห้องปฏิบัติการ", "วิศวกรรม", "บริหาร",
@@ -761,522 +600,434 @@
       "อายุรกรรม", "ระบบขับถ่าย", "ระบบสืบพันธุ์", "ตา หู ช่องปาก", "อุบัติเหตุ", "เวชภัณฑ์", "อื่นๆ"
     ];
 
-    function normKey(s) {
-      return String(s || "").trim().replace(/\s+/g, " ");
+    const symptomAliasToThai = {
+      "respiratory": "ระบบทางเดินหายใจ",
+      "digestive": "ระบบย่อยอาหาร",
+      "muscle": "กล้ามเนื้อ",
+      "brain": "ระบบสมอง",
+      "skin": "ผิวหนัง",
+      "internal medicine": "อายุรกรรม",
+      "urinary": "ระบบขับถ่าย",
+      "reproductive": "ระบบสืบพันธุ์",
+      "eye ear mouth": "ตา หู ช่องปาก",
+      "accident": "อุบัติเหตุ",
+      "supply": "เวชภัณฑ์",
+      "supplies": "เวชภัณฑ์",
+      "other": "อื่นๆ"
+    };
+
+    function norm(s) {
+      return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
     }
 
-    async function renderMonthCharts(year, month) {
-      // ----- master list (ครบทุกตัว) -----
-      const deptMaster = [
-        "อสร", "คลังวัตถุดิบ", "ห้องปฏิบัติการ", "วิศวกรรม", "บริหาร",
-        "ดิจิตอล", "ผู้รับเหมา", "อื่นๆ", "ธุรการ", "ผลิตอาหารสัตว์"
-      ];
+    function normDeptName(s) {
+      return String(s || "").trim().replace(/\./g, "").replace(/\s+/g, " ");
+    }
 
-      const symptomMaster = [
-        "ระบบทางเดินหายใจ", "ระบบย่อยอาหาร", "กล้ามเนื้อ", "ระบบสมอง", "ผิวหนัง",
-        "อายุรกรรม", "ระบบขับถ่าย", "ระบบสืบพันธุ์", "ตา หู ช่องปาก", "อุบัติเหตุ", "เวชภัณฑ์", "อื่นๆ"
-      ];
+    function toThaiSymptom(name) {
+      const k = norm(name);
+      return symptomAliasToThai[k] || String(name || "").trim();
+    }
 
-      // กันชื่ออังกฤษหลุดมา -> แปลงเป็นไทย
-      const symptomAliasToThai = {
-        "respiratory": "ระบบทางเดินหายใจ",
-        "digestive": "ระบบย่อยอาหาร",
-        "muscle": "กล้ามเนื้อ",
-        "brain": "ระบบสมอง",
-        "skin": "ผิวหนัง",
-        "internal medicine": "อายุรกรรม",
-        "urinary": "ระบบขับถ่าย",
-        "reproductive": "ระบบสืบพันธุ์",
-        "eye ear mouth": "ตา หู ช่องปาก",
-        "accident": "อุบัติเหตุ",
-        "wound": "ทำแผล",
-        "other": "อื่นๆ",
-        "supply": "เวชภัณฑ์",
-        "supplies": "เวชภัณฑ์"   // ✅ ใส่ตรงนี้
-      };
+    function fmtBaht(n) {
+      const v = Number(n || 0);
+      return v.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " บาท";
+    }
 
-      function normDeptName(s) {
-        return String(s || "")
-          .trim()
-          .replace(/\./g, "")   // เอาจุดออก เช่น "อสร." -> "อสร"
-          .replace(/\s+/g, " "); // กันช่องว่างแปลก ๆ     
+    async function fetchJson(url, opts = {}) {
+      const res = await fetch(url, { cache: "no-store", ...opts });
+      if (!res.ok) throw new Error(`HTTP ${res.status} @ ${url}`);
+
+      const ct = (res.headers.get("content-type") || "").toLowerCase();
+      if (!ct.includes("application/json")) {
+        // กันเคส session หลุดแล้วโดน redirect ไปหน้า login (HTML)
+        const txt = await res.text();
+        throw new Error(`Expected JSON but got: ${txt.slice(0, 80)}...`);
+      }
+      return await res.json();
+    }
+
+    // ================= MENU =================
+    function openSection(name, el) {
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      if (el) el.classList.add('active');
+
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
+      document.getElementById(name).classList.add('show');
+
+      document.getElementById('backBtn').style.display = name !== 'top5' ? 'block' : 'none';
+
+      setupScroll(name);
+
+      if (name === "top5") {
+        loadDrugTable(currentMonth, currentYear);
+      } else if (name === "month") {
+        renderMonthTab(currentYear, currentMonth);
+      } else if (name === "year") {
+        renderYearTab(currentYear);
+      } else if (name === "cost") {
+        ensureCostReady();
       }
 
-      function normKey(s) {
-        return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+      resizeVisibleCharts();
+    }
+
+    function goBack() {
+      document.querySelectorAll('.menu-item')[0].click();
+    }
+
+    function setupScroll(type) {
+      const bar = document.getElementById("scrollBar");
+      bar.innerHTML = "";
+
+      if (type === "year") {
+        bar.style.display = "none";
+        return;
       }
 
-      function toThaiSymptom(name) {
-        const k = normKey(name);
-        return symptomAliasToThai[k] || String(name || "").trim();
-      }
+      bar.style.display = "block";
+      const activeIndex = Math.max(0, (currentMonth || 1) - 1);
 
-      // 1) ดึงข้อมูลจาก API จริง
-      let deptData = [];
-      let symptomData = [];
-
-      try {
-        const res = await fetch(`/api/dashboard/dept_month?year=${year}&month=${month}`);
-        deptData = await res.json();
-      } catch (e) {
-        console.error("โหลด dept เดือนล้มเหลว:", e);
-        deptData = [];
-      }
-
-      try {
-        const res = await fetch(`/api/dashboard/symptom_month?year=${year}&month=${month}`);
-        symptomData = await res.json();
-      } catch (e) {
-        console.error("โหลด symptom เดือนล้มเหลว:", e);
-        symptomData = [];
-      }
-
-      // 2) ทำเป็น map เพื่อเติมค่าลง master list แล้ว "ตัวที่ไม่มี" = 0
-      const deptMap = {};
-      (deptData || []).forEach(x => {
-        const k = normDeptName(x.name);
-        if (!k) return;
-        deptMap[k] = (deptMap[k] || 0) + Number(x.total || 0);
-      });
-
-      const symMap = {};
-      (symptomData || []).forEach(x => {
-        const thaiName = toThaiSymptom(x.name);
-        const k = String(thaiName || "").trim();
-        if (!k) return;
-        symMap[k] = (symMap[k] || 0) + Number(x.total || 0);
-      });
-
-
-      const deptLabels = deptMaster.map(normDeptName);
-      const deptValues = deptMaster.map(n => Number(deptMap[n] || 0));
-
-      const symLabels = symptomMaster;              // ✅ ไทยครบทุกตัว
-      const symValues = symptomMaster.map(n => Number(symMap[n] || 0));
-
-      const maxDept = deptValues.length ? Math.max(...deptValues) : 0;
-      const maxSym = symValues.length ? Math.max(...symValues) : 0;
-
-      // 3) ปรับความหนาแท่งให้พอดีกับจำนวนรายการ
-      const deptBar = Math.max(10, Math.min(24, Math.floor(360 / deptLabels.length)));
-      const symBar = Math.max(10, Math.min(24, Math.floor(360 / symLabels.length)));
-
-      if (deptChart) deptChart.destroy();
-      if (diseaseChart) diseaseChart.destroy();
-
-      // ✅ กราฟหน่วยงาน (ครบทุกหน่วยงาน / ไม่มีข้อมูล = 0)
-      deptChart = new Chart(document.getElementById("deptChart"), {
-        type: "bar",
-        data: {
-          labels: deptLabels,
-          datasets: [{
-            data: deptValues,
-            backgroundColor: "#9abfe3",
-            barThickness: deptBar,
-            maxBarThickness: deptBar
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              suggestedMax: maxDept > 0 ? (maxDept + 1) : 1,
-              ticks: { stepSize: 1, precision: 0, font: { size: 18 } }
-            },
-            y: { ticks: { font: { size: 20 } } }
-          }
-        }
-      });
-
-      // ✅ กราฟกลุ่มอาการ (ไทยครบทุกกลุ่ม / ไม่มีข้อมูล = 0)
-      diseaseChart = new Chart(document.getElementById("diseaseChart"), {
-        type: "bar",
-        data: {
-          labels: symLabels,
-          datasets: [{
-            data: symValues,
-            backgroundColor: "#9ce2c8",
-            barThickness: symBar,
-            maxBarThickness: symBar
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              suggestedMax: maxSym > 0 ? (maxSym + 1) : 1,
-              ticks: { stepSize: 1, precision: 0, font: { size: 18 } }
-            },
-            y: { ticks: { font: { size: 20 } } }
-          }
-        }
+      monthLabels.forEach((m, i) => {
+        bar.innerHTML += `
+          <span class="scroll-item ${i === activeIndex ? 'active' : ''}"
+                onclick="changeMonth(${i},this)">${m}</span>`;
       });
     }
 
+    function changeMonth(i, el) {
+      document.querySelectorAll('.scroll-item').forEach(m => m.classList.remove('active'));
+      if (el) el.classList.add('active');
 
+      currentMonth = i + 1;
 
-    /* ================== YEAR CHART ================== */
-    let yearDeptChart = null;
-    let yearDiseaseChart = null;
+      if (document.getElementById("top5").classList.contains("show")) {
+        loadDrugTable(currentMonth, currentYear);
+      }
+      if (document.getElementById("month").classList.contains("show")) {
+        renderMonthTab(currentYear, currentMonth);
+      }
+      if (document.getElementById("cost").classList.contains("show")) {
+        ensureCostReady();
+      }
+    }
 
-    async function renderYearCharts(year) {
-      // ----- master list เหมือนรายเดือน -----
-      const deptMaster = [
-        "อสร", "คลังวัตถุดิบ", "ห้องปฏิบัติการ", "วิศวกรรม", "บริหาร",
-        "ดิจิตอล", "ผู้รับเหมา", "อื่นๆ", "ธุรการ", "ผลิตอาหารสัตว์"
-      ];
+    function resizeVisibleCharts() {
+      requestAnimationFrame(() => {
+        [top5MonthChart, deptChart, diseaseChart, yearTop5Chart, yearDeptChart, yearDiseaseChart, monthlyCostChart]
+          .forEach(c => {
+            try { if (c) c.resize(); } catch (_) {}
+          });
+      });
+    }
 
-      const symptomMaster = [
-        "ระบบทางเดินหายใจ", "ระบบย่อยอาหาร", "กล้ามเนื้อ", "ระบบสมอง", "ผิวหนัง",
-        "อายุรกรรม", "ระบบขับถ่าย", "ระบบสืบพันธุ์", "ตา หู ช่องปาก", "อุบัติเหตุ", "เวชภัณฑ์", "อื่นๆ"
-      ];
+    // ================= CHART HELPERS =================
+    function upsertTop5(chartObj, canvasId, top5List) {
+      let labels = (top5List || []).map(x => x.name);
+      let values = (top5List || []).map(x => Number(x.total || 0));
 
-      // map อังกฤษ -> ไทย (ให้เหมือนรายเดือน)
-      const symptomAliasToThai = {
-        "respiratory": "ระบบทางเดินหายใจ",
-        "digestive": "ระบบย่อยอาหาร",
-        "muscle": "กล้ามเนื้อ",
-        "brain": "ระบบสมอง",
-        "skin": "ผิวหนัง",
-        "internal medicine": "อายุรกรรม",
-        "urinary": "ระบบขับถ่าย",
-        "reproductive": "ระบบสืบพันธุ์",
-        "eye ear mouth": "ตา หู ช่องปาก",
-        "accident": "อุบัติเหตุ",
-        "other": "อื่นๆ",
-        "supply": "เวชภัณฑ์",
-        "supplies": "เวชภัณฑ์",
-        "เวชภัณฑ์": "เวชภัณฑ์"
+      if (!labels.length) {
+        labels = ["ไม่มีข้อมูล"];
+        values = [0];
+      }
+
+      const data = {
+        labels,
+        datasets: [{
+          label: "จำนวนที่จ่าย",
+          data: values,
+          backgroundColor: ['#9abfe3', '#9ce2c8', '#f8cfb4', '#eabbff', '#eaa3ce'],
+          borderWidth: 0,
+          maxBarThickness: 70,
+          categoryPercentage: 0.7,
+          barPercentage: 0.8
+        }]
       };
 
-      function normKey(s) {
-        return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
-      }
-      function toThaiSymptom(name) {
-        const k = normKey(name);
-        return symptomAliasToThai[k] || String(name || "").trim();
-      }
-      function normDeptName(s) {
-        return String(s || "")
-          .trim()
-          .replace(/\./g, "")     // "อสร." -> "อสร"
-          .replace(/\s+/g, " ");
-      }
-
-      // 1) ดึงข้อมูลจริงจาก API
-      let deptData = [];
-      let symptomData = [];
-
-      try {
-        const r1 = await fetch(`/api/dashboard/dept_year?year=${year}`);
-        deptData = await r1.json();
-      } catch (e) {
-        console.error("โหลด dept ปีล้มเหลว:", e);
-        deptData = [];
+      if (!chartObj) {
+        return new Chart(document.getElementById(canvasId), {
+          type: "bar",
+          data,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false }, title: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
       }
 
-      try {
-        const r2 = await fetch(`/api/dashboard/symptom_year?year=${year}`);
-        symptomData = await r2.json();
-      } catch (e) {
-        console.error("โหลด symptom ปีล้มเหลว:", e);
-        symptomData = [];
+      chartObj.data = data;
+      chartObj.update("none");
+      return chartObj;
+    }
+
+    function upsertHBar(chartObj, canvasId, labels, values, bgColor, fontX = 18, fontY = 20) {
+      const maxV = values.length ? Math.max(...values) : 0;
+      const bar = Math.max(10, Math.min(24, Math.floor(360 / Math.max(labels.length, 1))));
+
+      const data = {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: bgColor,
+          barThickness: bar,
+          maxBarThickness: bar
+        }]
+      };
+
+      const options = {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            beginAtZero: true,
+            suggestedMax: maxV > 0 ? (maxV + 1) : 1,
+            ticks: { stepSize: 1, precision: 0, font: { size: fontX } }
+          },
+          y: { ticks: { font: { size: fontY } } }
+        }
+      };
+
+      if (!chartObj) {
+        return new Chart(document.getElementById(canvasId), { type: "bar", data, options });
       }
 
-      // 2) map เพื่อเติมให้ครบ master (ไม่มี = 0)
+      chartObj.data = data;
+      chartObj.options = options;
+      chartObj.update("none");
+      return chartObj;
+    }
+
+    // ================= MONTH TAB (1 API / tab) =================
+    async function renderMonthTab(year, month) {
+      const reqId = ++monthReqToken;
+      const cacheKey = `${year}-${month}`;
+
+      let pack = monthBundleCache.get(cacheKey);
+
+      if (!pack) {
+        try {
+          if (monthAbortCtrl) monthAbortCtrl.abort();
+          monthAbortCtrl = new AbortController();
+
+          pack = await fetchJson(`/api/dashboard/month_bundle?year=${year}&month=${month}`, {
+            signal: monthAbortCtrl.signal
+          });
+
+          monthBundleCache.set(cacheKey, pack);
+        } catch (e) {
+          if (e.name === "AbortError") return;
+          console.error("โหลด month_bundle ล้มเหลว:", e);
+          return; // ไม่ destroy กราฟเดิม
+        }
+      }
+
+      if (reqId !== monthReqToken) return; // กัน response เก่าเขียนทับ
+
+      // top5
+      top5MonthChart = upsertTop5(top5MonthChart, "monthTop5Chart", pack.top5 || []);
+
+      // dept ครบ master
       const deptMap = {};
-      (deptData || []).forEach(x => {
+      (pack.dept || []).forEach(x => {
         const k = normDeptName(x.name);
-        if (!k) return;
         deptMap[k] = (deptMap[k] || 0) + Number(x.total || 0);
       });
-
-      const symMap = {};
-      (symptomData || []).forEach(x => {
-        const thai = toThaiSymptom(x.name);
-        const k = String(thai || "").trim();
-        if (!k) return;
-        symMap[k] = (symMap[k] || 0) + Number(x.total || 0);
-      });
-
       const deptLabels = deptMaster.map(normDeptName);
-      const deptValues = deptMaster.map(n => Number(deptMap[n] || 0));
+      const deptValues = deptMaster.map(n => Number(deptMap[normDeptName(n)] || 0));
+      deptChart = upsertHBar(deptChart, "deptChart", deptLabels, deptValues, "#9abfe3", 18, 20);
 
+      // symptom ครบ master + normalize alias
+      const symMap = {};
+      (pack.symptom || []).forEach(x => {
+        const th = toThaiSymptom(x.name);
+        symMap[th] = (symMap[th] || 0) + Number(x.total || 0);
+      });
       const symLabels = symptomMaster;
       const symValues = symptomMaster.map(n => Number(symMap[n] || 0));
+      diseaseChart = upsertHBar(diseaseChart, "diseaseChart", symLabels, symValues, "#9ce2c8", 18, 20);
 
-      const maxDept = deptValues.length ? Math.max(...deptValues) : 0;
-      const maxSym = symValues.length ? Math.max(...symValues) : 0;
+      resizeVisibleCharts();
+    }
 
-      const deptBar = Math.max(10, Math.min(24, Math.floor(360 / deptLabels.length)));
-      const symBar = Math.max(10, Math.min(24, Math.floor(360 / symLabels.length)));
+    // ================= YEAR TAB (1 API / tab) =================
+    async function renderYearTab(year) {
+      const reqId = ++yearReqToken;
+      const cacheKey = `${year}`;
 
-      if (yearDeptChart) yearDeptChart.destroy();
-      if (yearDiseaseChart) yearDiseaseChart.destroy();
+      let pack = yearBundleCache.get(cacheKey);
 
-      yearDeptChart = new Chart(document.getElementById("yearDeptChart"), {
-        type: "bar",
-        data: {
-          labels: deptLabels,
-          datasets: [{
-            data: deptValues,
-            backgroundColor: "#9abfe3",
-            barThickness: deptBar,
-            maxBarThickness: deptBar
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              suggestedMax: maxDept > 0 ? (maxDept + 1) : 1,
-              ticks: { stepSize: 1, precision: 0, font: { size: 18 } }
-            },
-            y: { ticks: { font: { size: 20 } } }
-          }
+      if (!pack) {
+        try {
+          if (yearAbortCtrl) yearAbortCtrl.abort();
+          yearAbortCtrl = new AbortController();
+
+          pack = await fetchJson(`/api/dashboard/year_bundle?year=${year}`, {
+            signal: yearAbortCtrl.signal
+          });
+
+          yearBundleCache.set(cacheKey, pack);
+        } catch (e) {
+          if (e.name === "AbortError") return;
+          console.error("โหลด year_bundle ล้มเหลว:", e);
+          return;
         }
-      });
-
-      yearDiseaseChart = new Chart(document.getElementById("yearDiseaseChart"), {
-        type: "bar",
-        data: {
-          labels: symLabels,
-          datasets: [{
-            data: symValues,
-            backgroundColor: "#9ce2c8",
-            barThickness: symBar,
-            maxBarThickness: symBar
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              suggestedMax: maxSym > 0 ? (maxSym + 1) : 1,
-              ticks: { stepSize: 1, precision: 0, font: { size: 18 } }
-            },
-            y: { ticks: { font: { size: 20 } } }
-          }
-        }
-      });
-    }
-
-
-
-  /* ================== DRUG & SUPPLY TABLE (DYNAMIC MASTER) ================== */
-
-  let allItems = []; // ✅ รายชื่อทั้งหมด (ยา + เวชภัณฑ์ + อื่นๆ) ดึงจาก API
-
-  function norm(s) {
-    if (!s) return "";
-    s = String(s).trim().toLowerCase();
-    s = s.replace(/[–—−]/g, "-");  // dash หลายแบบ -> "-"
-    s = s.replace(/\s+/g, " ");    // ช่องว่างซ้อน -> 1 ช่อง
-    return s;
-  }
-
-  async function loadMasterItems() {
-    try {
-      const r = await fetch("/api/dashboard/item_master");
-      const j = await r.json();
-      allItems = (j.items || []).filter(Boolean);
-      // เรียงชื่อให้อ่านง่าย
-      allItems.sort((a, b) => a.localeCompare(b, "th"));
-    } catch (e) {
-      console.error("โหลด master items ล้มเหลว:", e);
-      allItems = [];
-    }
-  }
-
-  async function loadDrugTable(month = currentMonth, year = currentYear) {
-    // ✅ ถ้ายังไม่มี master list -> โหลดก่อน
-    if (!allItems || allItems.length === 0) {
-      await loadMasterItems();
-    }
-
-    const tbody = document.getElementById("drugTable");
-    tbody.innerHTML = "";
-
-    let data = {};
-    try {
-      const res = await fetch(`/api/dashboard/drug_summary?year=${year}&month=${month}`);
-      data = await res.json();
-    } catch (e) {
-      console.error("โหลดข้อมูลตารางยาไม่ได้:", e);
-      data = {};
-    }
-
-    const dataNorm = {};
-    Object.keys(data || {}).forEach(k => {
-      dataNorm[norm(k)] = data[k];
-    });
-
-    allItems.forEach(name => {
-      const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
-
-      const usedText = item.has_used ? item.used : "-";
-      const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${name}</td>
-        <td style="text-align:center;">${usedText}</td>
-        <td style="text-align:center;">${remainText}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-    /* ================== TOP5 ================== */
-    let top5MonthChart = null;
-    let yearTop5Chart = null;
-
-
-    async function renderTop5Month(month) {
-      let data = [];
-      try {
-        const res = await fetch(`/api/dashboard/top5_month?year=${currentYear}&month=${month}`);
-        data = await res.json();
-      } catch (e) {
-        console.error("โหลด Top5 เดือนล้มเหลว:", e);
-        data = [];
       }
 
-      const ctx = document.getElementById("monthTop5Chart");
+      if (reqId !== yearReqToken) return;
 
-      if (top5MonthChart) top5MonthChart.destroy();
+      // top5 year
+      yearTop5Chart = upsertTop5(yearTop5Chart, "yearTop5Chart", pack.top5 || []);
 
-      const labels = (data || []).map(d => d.name);
-      const values = (data || []).map(d => d.total);
+      // dept year
+      const deptMap = {};
+      (pack.dept || []).forEach(x => {
+        const k = normDeptName(x.name);
+        deptMap[k] = (deptMap[k] || 0) + Number(x.total || 0);
+      });
+      const deptLabels = deptMaster.map(normDeptName);
+      const deptValues = deptMaster.map(n => Number(deptMap[normDeptName(n)] || 0));
+      yearDeptChart = upsertHBar(yearDeptChart, "yearDeptChart", deptLabels, deptValues, "#9abfe3", 18, 20);
 
-      if (!labels.length) {
-        top5MonthChart = new Chart(ctx, {
+      // symptom year
+      const symMap = {};
+      (pack.symptom || []).forEach(x => {
+        const th = toThaiSymptom(x.name);
+        symMap[th] = (symMap[th] || 0) + Number(x.total || 0);
+      });
+      const symLabels = symptomMaster;
+      const symValues = symptomMaster.map(n => Number(symMap[n] || 0));
+      yearDiseaseChart = upsertHBar(yearDiseaseChart, "yearDiseaseChart", symLabels, symValues, "#9ce2c8", 18, 20);
+
+      resizeVisibleCharts();
+    }
+
+    // ================= DRUG TABLE =================
+    async function loadMasterItems() {
+      try {
+        const j = await fetchJson("/api/dashboard/item_master");
+        allItems = (j.items || []).filter(Boolean);
+        allItems.sort((a, b) => a.localeCompare(b, "th"));
+      } catch (e) {
+        console.error("โหลด master items ล้มเหลว:", e);
+        allItems = [];
+      }
+    }
+
+    async function loadDrugTable(month = currentMonth, year = currentYear) {
+      if (!allItems.length) await loadMasterItems();
+
+      const tbody = document.getElementById("drugTable");
+      tbody.innerHTML = "";
+
+      let data = {};
+      try {
+        data = await fetchJson(`/api/dashboard/drug_summary?year=${year}&month=${month}`);
+      } catch (e) {
+        console.error("โหลดตารางยาไม่ได้:", e);
+        data = {};
+      }
+
+      const dataNorm = {};
+      Object.keys(data || {}).forEach(k => {
+        dataNorm[norm(k)] = data[k];
+      });
+
+      allItems.forEach(name => {
+        const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
+        const usedText = item.has_used ? item.used : "-";
+        const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td style="text-align:center;">${usedText}</td>
+          <td style="text-align:center;">${remainText}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ================= COST =================
+    async function loadCostYear(year) {
+      if (costYearCache.has(year)) {
+        costCache = costYearCache.get(year);
+        return;
+      }
+      try {
+        const json = await fetchJson(`/api/dashboard/monthly_cost?year=${year}`);
+        const months = Array.isArray(json.months) ? json.months : [];
+        costYearCache.set(year, months);
+        costCache = months;
+      } catch (e) {
+        console.error("โหลดค่าใช้จ่ายล้มเหลว:", e);
+        costCache = [];
+      }
+    }
+
+    function updateCostSummary(monthIndex0) {
+      const m = (costCache && costCache[monthIndex0])
+        ? costCache[monthIndex0]
+        : { drug: 0, supply: 0, other: 0, total: 0 };
+
+      document.getElementById("sumDrug").innerText = fmtBaht(m.drug);
+      document.getElementById("sumSupply").innerText = fmtBaht(m.supply);
+      document.getElementById("sumOther").innerText = fmtBaht(m.other);
+      document.getElementById("sumTotal").innerText = fmtBaht(m.total);
+    }
+
+    function renderCostChart() {
+      const drugData = (costCache || []).map(x => Number(x.drug || 0));
+      const supplyData = (costCache || []).map(x => Number(x.supply || 0));
+      const otherData = (costCache || []).map(x => Number(x.other || 0));
+
+      const data = {
+        labels: monthLabels,
+        datasets: [
+          { label: "ค่ายา", data: drugData, backgroundColor: "#90CAF9" },
+          { label: "ค่าเวชภัณฑ์", data: supplyData, backgroundColor: "#e38cf3" },
+          { label: "ค่าอื่นๆ", data: otherData, backgroundColor: "#69fff0" }
+        ]
+      };
+
+      if (!monthlyCostChart) {
+        monthlyCostChart = new Chart(document.getElementById("monthlyCostChart"), {
           type: "bar",
-          data: { labels: ["ไม่มีข้อมูล"], datasets: [{ data: [0] }] },
+          data,
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false }, title: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            animation: false,
+            plugins: { legend: { display: true } }
           }
         });
         return;
       }
 
-
-      top5MonthChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "จำนวนที่จ่าย",
-            data: values,
-            backgroundColor: ['#9abfe3', '#9ce2c8', '#f8cfb4', '#eabbff', '#eaa3ce'], // ✅ สีต่างกัน 5 แท่ง
-            borderWidth: 0,
-            maxBarThickness: 70,   // ✅ กันแท่งอ้วนเกิน
-            categoryPercentage: 0.7,
-            barPercentage: 0.8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,   // ✅ ใช้ความสูงจาก .chart-wrap-top5
-          plugins: {
-            legend: { display: false },
-            title: { display: false }    // ✅ กันข้อความซ้ำในกราฟ
-          },
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      });
-
-
+      monthlyCostChart.data = data;
+      monthlyCostChart.update("none");
     }
 
-
-    async function renderYearTop5() {
-      let data = [];
-      try {
-        const res = await fetch(`/api/dashboard/top5_year?year=${currentYear}`);
-        data = await res.json();
-      } catch (e) {
-        console.error("โหลด Top5 ปีล้มเหลว:", e);
-        data = [];
-      }
-
-      const ctx = document.getElementById("yearTop5Chart");
-      if (yearTop5Chart) yearTop5Chart.destroy();
-
-      const labels = (data || []).map(d => d.name);
-      const values = (data || []).map(d => d.total);
-
-      if (!labels.length) {
-        yearTop5Chart = new Chart(ctx, {
-          type: "bar",
-          data: { labels: ["ไม่มีข้อมูล"], datasets: [{ data: [0] }] },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, title: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-          }
-        });
-        return;
-      }
-
-      yearTop5Chart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "จำนวนที่จ่าย",
-            data: values,
-            backgroundColor: ['#9abfe3', '#9ce2c8', '#f8cfb4', '#eabbff', '#eaa3ce'],
-            borderWidth: 0,
-            maxBarThickness: 70,
-            categoryPercentage: 0.7,
-            barPercentage: 0.8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, title: { display: false } },
-          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-      });
+    async function ensureCostReady() {
+      await loadCostYear(currentYear);
+      renderCostChart();
+      updateCostSummary(currentMonth - 1);
+      resizeVisibleCharts();
     }
 
-
-    // ✅ init ตอนโหลดหน้า dashboard
+    // ================= INIT =================
     document.addEventListener("DOMContentLoaded", async function () {
       setupScroll("top5");
-      currentMonth = 1;
-      await loadMasterItems();                 // ✅ โหลดรายชื่อใหม่ทั้งหมดก่อน
+      await loadMasterItems();
       await loadDrugTable(currentMonth, currentYear);
     });
-
-
   </script>
 
-  </div><!-- container ปิดตรงนี้จริง ๆ -->
   <div class="footer">© 2026 Safety Officer, CPF Khon Kaen Feedmill</div>
 </body>
 
