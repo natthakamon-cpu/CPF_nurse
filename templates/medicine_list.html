@@ -2,64 +2,23 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ group }}</title>
-
-  <!-- Performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
-    * { box-sizing: border-box; }
-    body { font-family:'Sarabun',sans-serif; background:#f4f6f8; margin:0; }
-
-    .header{
-      width:100%;
-      background:#fff;
-      border-bottom:1px solid #e0e0e0;
-      padding:14px 40px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-    }
-
-    .header-left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      font-size:20px;
-      font-weight:700;
-      color:#5b2c83;
-    }
-
+    *{ box-sizing:border-box; }
+    body{ font-family:'Sarabun',sans-serif; background:#f4f6f8; margin:0; }
+    .header{ width:100%; background:#fff; border-bottom:1px solid #e0e0e0; padding:14px 40px; display:flex; align-items:center; justify-content:space-between; }
+    .header-left{ display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; color:#5b2c83; }
     .header-left i{ font-size:26px; }
-
-    .header-right{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      font-size:14px;
-    }
-
-    .logout-btn{
-      background:#ff6b6b;
-      color:#fff;
-      padding:8px 16px;
-      border-radius:6px;
-      text-decoration:none;
-      font-weight:600;
-    }
+    .header-right{ display:flex; align-items:center; gap:16px; font-size:14px; }
+    .logout-btn{ background:#ff6b6b; color:#fff; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:600; }
 
     .container{
-      max-width:1500px;
-      background:#fff;
-      margin:40px auto;
-      padding:40px;
-      border-radius:16px;
-      box-shadow:0 8px 25px rgba(0,0,0,0.25);
+      max-width:1500px; background:#fff; margin:40px auto; padding:40px;
+      border-radius:16px; box-shadow:0 8px 25px rgba(0,0,0,0.25);
       position:relative;
     }
 
@@ -78,7 +37,7 @@
     }
     .back-menu-btn:hover{ background:#218838; }
 
-    /* ปุ่มเพิ่ม */
+    /* ปุ่มเพิ่ม (เหมือนหน้าเวชภัณฑ์) */
     .add-btn{
       position:absolute;
       top:15px;
@@ -101,79 +60,41 @@
     .add-btn:hover{ transform: translateY(-2px); filter:brightness(0.98); }
     .add-btn:active{ transform: translateY(0px); }
 
-    .title{
-      text-align:center;
-      font-size:32px;
-      font-weight:700;
-      margin:10px 0 30px;
-      word-break: break-word;
-    }
+    .title{ text-align:center; font-size:32px; font-weight:700; margin:10px 0 30px; }
 
     .grid{
-      display:flex;
-      flex-wrap:wrap;
-      gap:22px;
+      display:flex; flex-wrap:wrap; gap:22px;
       justify-content:flex-start;
       padding:10px 0 0;
-      contain: layout style;
     }
 
-    .med-card{
-      position:relative;
-      width:360px;
-
-      /* render optimization for long lists */
-      content-visibility:auto;
-      contain-intrinsic-size: 120px 120px;
-    }
+    .med-card{ position:relative; width:360px; }
 
     .med-box{
       width:100%;
-      min-height:120px;
+      height:120px;
       background: linear-gradient(135deg, #1E88E5 0%, #90CAF9 100%);
-      border-radius:16px;
-      text-decoration:none;
-      color:#0b2b4a;
-
-      display:flex;
-      align-items:center;
-      justify-content:center;
-
-      font-size:26px;
-      font-weight:800;
+      border-radius:16px; text-decoration:none; color:#0b2b4a;
+      display:flex; align-items:center; justify-content:center;
+      font-size:26px; font-weight:800;
       box-shadow:0 6px 18px rgba(0,0,0,0.18);
       transition:all .2s ease;
       text-align:center;
-      padding:18px;
-      line-height:1.25;
-      word-break: break-word;
+      padding:0 18px;
     }
-
-    .med-box:hover{
-      transform:translateY(-3px);
-      box-shadow:0 10px 25px rgba(0,0,0,0.25);
-    }
+    .med-box:hover{ transform:translateY(-3px); box-shadow:0 10px 25px rgba(0,0,0,0.25); }
 
     .del-form{ position:absolute; top:10px; right:10px; margin:0; }
-
     .del-btn{
-      width:42px;
-      height:42px;
-      border:none;
-      border-radius:12px;
-      cursor:pointer;
+      width:42px; height:42px; border:none; border-radius:12px; cursor:pointer;
       background:rgba(255,255,255,0.85);
       box-shadow:0 4px 10px rgba(0,0,0,0.18);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:16px;
-      color:#d12b2b;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#d12b2b;
     }
-
     .del-btn:hover{ background:#fff; transform:scale(1.05); }
 
-    /* ===== Modal ===== */
+    /* ===== Modal (เหมือน supply_list) ===== */
     .modal{
       position:fixed;
       inset:0;
@@ -194,14 +115,12 @@
       box-shadow:0 12px 30px rgba(0,0,0,0.35);
       padding:22px;
     }
-
     .modal-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       margin-bottom:14px;
     }
-
     .modal-head h3{ margin:0; font-size:20px; }
 
     .close-btn{
@@ -223,7 +142,6 @@
       margin-bottom:6px;
       color:#333;
     }
-
     .form-row input{
       width:100%;
       padding:12px 14px;
@@ -233,7 +151,6 @@
       outline:none;
       font-family:'Sarabun',sans-serif;
     }
-
     .form-row input:focus{ border-color:#3b82f6; }
 
     .form-actions{
@@ -242,7 +159,6 @@
       justify-content:flex-end;
       margin-top:16px;
     }
-
     .btn{
       border:none;
       padding:10px 14px;
@@ -252,38 +168,10 @@
       font-size:14px;
       font-family:'Sarabun',sans-serif;
     }
-
     .btn-cancel{ background:#e5e7eb; }
     .btn-save{ background:#3b82f6; color:#fff; }
 
-    .footer{
-      width:100%;
-      background:#dcdcdc;
-      text-align:center;
-      padding:18px;
-      font-size:14px;
-      color:#555;
-      margin-top:60px;
-    }
-
-    @media (max-width: 900px) {
-      .container{
-        margin:20px auto;
-        padding:20px;
-      }
-
-      .header{
-        padding:12px 16px;
-      }
-
-      .title{ font-size:28px; }
-      .med-card{ width:100%; }
-      .med-box{ min-height:100px; font-size:22px; }
-      .add-btn{
-        position:static;
-        margin:0 0 12px auto;
-      }
-    }
+    .footer{ width:100%; background:#dcdcdc; text-align:center; padding:18px; font-size:14px; color:#555; margin-top:60px; }
   </style>
 </head>
 
@@ -293,7 +181,6 @@
       <i class="fa-solid fa-stethoscope"></i>
       ห้องพยาบาล CPF ขอนแก่น
     </div>
-
     <div class="header-right">
       {{ session.get('user_name', 'User') }} ({{ session.get('role', 'user') }}) | หน่วยงาน Safety
       <a href="/logout" class="logout-btn">ออก</a>
@@ -302,7 +189,7 @@
 
   <div class="container">
     <div class="top-bar">
-      <a href="{{ url_for('medicine_group') }}" class="back-menu-btn">⬅ ย้อนกลับ</a>
+      <a href="/medicine/group" class="back-menu-btn">⬅ ย้อนกลับ</a>
     </div>
 
     {% if (session.get('role','')|lower) in ['admin','user'] %}
@@ -316,16 +203,17 @@
     <div class="grid">
       {% for m in meds %}
         <div class="med-card">
-          <a class="med-box" href="{{ url_for('medicine_detail', med_id=m.id) }}">{{ m.name }}</a>
+          <a class="med-box" href="/medicine/{{ m.id }}">{{ m.name }}</a>
 
           {% if (session.get("role","")|lower) in ["admin","user"] %}
-          <form class="del-form" method="post" action="{{ url_for('medicine_delete', med_id=m.id) }}"
+          <form class="del-form" method="post" action="/medicine/{{ m.id }}/delete"
                 onsubmit="return confirm('ยืนยันลบ: {{ m.name }} ?\n(ระบบจะลบ LOT ของรายการนี้ด้วย)');">
             <button type="submit" class="del-btn" title="ลบรายการ">
               <i class="fa-solid fa-trash"></i>
             </button>
           </form>
           {% endif %}
+
         </div>
       {% endfor %}
     </div>
@@ -343,9 +231,8 @@
         <button type="button" class="close-btn" id="closeAdd" aria-label="close">✕</button>
       </div>
 
-      <form method="post" action="{{ url_for('medicine_add') }}">
+      <form method="post" action="/medicine/add">
         <input type="hidden" name="group" value="{{ group }}">
-        <input type="hidden" name="type" value="medicine">
 
         <div class="form-row">
           <label>ชื่อยา/เวชภัณฑ์</label>
@@ -361,7 +248,7 @@
   </div>
 
   <div class="footer">
-    © 2026 Safety Officer, CPF Khon Kaen Feedmill
+    © 2025 Safety Officer, CPF Khon Kaen Feedmill
   </div>
 
   <script>
@@ -370,32 +257,32 @@
     const closeBtn = document.getElementById("closeAdd");
     const cancelBtn = document.getElementById("cancelAdd");
 
-    function openModal() {
-      if (!modal) return;
+    function openModal(){
+      if(!modal) return;
       modal.classList.add("show");
       modal.setAttribute("aria-hidden", "false");
       const input = document.getElementById("medName");
-      if (input) input.focus();
+      if(input) input.focus();
     }
 
-    function closeModal() {
-      if (!modal) return;
+    function closeModal(){
+      if(!modal) return;
       modal.classList.remove("show");
       modal.setAttribute("aria-hidden", "true");
     }
 
-    if (openBtn) openBtn.addEventListener("click", openModal);
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
-    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+    if(openBtn) openBtn.addEventListener("click", openModal);
+    if(closeBtn) closeBtn.addEventListener("click", closeModal);
+    if(cancelBtn) cancelBtn.addEventListener("click", closeModal);
 
-    if (modal) {
+    if(modal){
       modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
+        if(e.target === modal) closeModal();
       });
     }
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeModal();
+      if(e.key === "Escape") closeModal();
     });
   </script>
 </body>
