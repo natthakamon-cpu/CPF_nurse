@@ -3,7 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>กลุ่มยา</title>
+
+  <!-- Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <!-- Google Font : Sarabun -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,7 +16,6 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     * {
       box-sizing: border-box;
@@ -84,25 +88,25 @@
     }
 
     /* ===== ปุ่มย้อนกลับ ===== */
-    .top-bar{
-      text-align:left;
-      margin-bottom:10px;
+    .top-bar {
+      text-align: left;
+      margin-bottom: 10px;
     }
 
-    .back-menu-btn{
-      display:inline-block;
-      background:#28a745;
-      color:white;
-      padding:10px 20px;
-      font-size:20px;
-      border-radius:8px;
-      text-decoration:none;
-      box-shadow:0 4px 10px rgba(0,0,0,0.2);
-      transition:0.2s;
+    .back-menu-btn {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: 0.2s;
     }
 
-    .back-menu-btn:hover{
-      background:#218838;
+    .back-menu-btn:hover {
+      background: #218838;
     }
 
     /* ===== หัวข้อ ===== */
@@ -139,6 +143,8 @@
 
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
       transition: all 0.25s ease;
+      contain: content;
+      will-change: transform;
     }
 
     .group-box i {
@@ -150,6 +156,20 @@
     .group-box:hover {
       transform: translateY(-4px);
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .group-box.loading {
+      opacity: 0.86;
+      pointer-events: none;
+    }
+
+    .group-box.loading::after {
+      content: "กำลังโหลด...";
+      margin-left: auto;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      opacity: 0.95;
     }
 
     /* ช่องอื่นๆ */
@@ -192,26 +212,28 @@
 
   <div class="container">
 
-
     <!-- ปุ่มย้อนกลับหน้าก่อน -->
     <div class="top-bar">
       <a class="back-menu-btn" href="{{ url_for('medicine_type') }}">⬅ ย้อนกลับ</a>
     </div>
-
 
     <h2>กลุ่มยา</h2>
 
     <div class="group-container">
 
       <!-- ช่องอื่นๆ -->
-      <a href="/medicine/list/อื่นๆ" class="group-box other-box">
+      <a href="{{ url_for('medicine_list', group='อื่นๆ') }}"
+         class="group-box other-box group-link"
+         data-group="อื่นๆ">
         <i class="fa-solid fa-plus"></i>
         อื่นๆ
       </a>
 
       {% for g in groups %}
       {% if g != 'อื่นๆ' %}
-      <a href="/medicine/list/{{ g }}" class="group-box green-box">
+      <a href="{{ url_for('medicine_list', group=g) }}"
+         class="group-box green-box group-link"
+         data-group="{{ g }}">
         <i class="
           {% if g == 'ระบบทางเดินหายใจ' %}fa-solid fa-lungs
           {% elif g == 'ระบบย่อยอาหาร' %}fa-solid fa-utensils
@@ -236,12 +258,85 @@
       {% endfor %}
 
     </div>
-
   </div>
+
   <!-- ===== FOOTER ===== -->
   <div class="footer">
     © 2026 Safety Officer, CPF Khon Kaen Feedmill
   </div>
+
+  <script>
+    // ==============================
+    // Performance Patch:
+    // - Warm backend cache ก่อนคลิก (hover/touch/focus)
+    // - Prefetch HTML ปลายทาง
+    // ==============================
+    (function () {
+      const links = Array.from(document.querySelectorAll(".group-link[data-group]"));
+      if (!links.length) return;
+
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const isSaveData = !!(conn && conn.saveData);
+      const isVerySlow = !!(conn && /2g/.test(conn.effectiveType || ""));
+      const allowPrefetch = !(isSaveData || isVerySlow);
+
+      const warmed = new Set();
+
+      function warmGroup(group) {
+        if (!group || warmed.has(group)) return;
+        warmed.add(group);
+
+        const encoded = encodeURIComponent(group);
+
+        // warm server cache
+        fetch(`/api/prefetch/medicine_group/${encoded}`, {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          keepalive: true
+        }).catch(() => {});
+
+        // browser prefetch next page
+        if (allowPrefetch) {
+          const l = document.createElement("link");
+          l.rel = "prefetch";
+          l.href = `/medicine/list/${encoded}`;
+          document.head.appendChild(l);
+        }
+      }
+
+      function schedule(fn) {
+        if ("requestIdleCallback" in window) {
+          requestIdleCallback(fn, { timeout: 700 });
+        } else {
+          setTimeout(fn, 120);
+        }
+      }
+
+      links.forEach((a) => {
+        const group = (a.dataset.group || "").trim();
+
+        const kick = () => warmGroup(group);
+        a.addEventListener("mouseenter", kick, { passive: true });
+        a.addEventListener("focus", kick, { passive: true });
+        a.addEventListener("touchstart", kick, { passive: true, once: true });
+
+        a.addEventListener("click", () => {
+          a.classList.add("loading");
+        }, { passive: true });
+      });
+
+      // preload 3 กลุ่มแรกหลังหน้าโหลดเสร็จ (แบบไม่บล็อก)
+      window.addEventListener("load", () => {
+        schedule(() => {
+          links.slice(0, 3).forEach(a => {
+            const g = (a.dataset.group || "").trim();
+            warmGroup(g);
+          });
+        });
+      });
+    })();
+  </script>
 </body>
 
 </html>
