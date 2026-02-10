@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from urllib.parse import unquote, quote
+from threading import Lock
+
 
 # ---------------- APP ----------------
 app = Flask(__name__)
@@ -157,16 +159,63 @@ def visit_date_for_input(value):
 
 _GAS_CACHE = {}
 
+_DASH_CACHE = {}
+_DASH_LOCK = Lock()
+
+def _dash_get(key, ttl=45):
+    now = time.time()
+    with _DASH_LOCK:
+        row = _DASH_CACHE.get(key)
+        if not row:
+            return None
+        ts, data = row
+        if now - ts > ttl:
+            _DASH_CACHE.pop(key, None)
+            return None
+        return data
+
+def _dash_set(key, data):
+    with _DASH_LOCK:
+        _DASH_CACHE[key] = (time.time(), data)
+
+def _dash_clear():
+    with _DASH_LOCK:
+        _DASH_CACHE.clear()
+
+def _visit_year_month(raw):
+    s = str(raw or "").strip()
+    # fast path: YYYY-MM...
+    if len(s) >= 7 and s[:4].isdigit() and s[4] == "-" and s[5:7].isdigit():
+        y = int(s[:4])
+        m = int(s[5:7])
+        if 1 <= m <= 12:
+            return y, m
+
+    dt = _parse_any_datetime(s)
+    if not dt:
+        return None, None
+
+    if dt.tzinfo is not None and TH_TZ:
+        try:
+            dt = dt.astimezone(TH_TZ)
+        except Exception:
+            pass
+    return dt.year, dt.month
 
 def gas_cache_invalidate(table=None):
     """ล้าง cache เพื่อให้ข้อมูลใหม่แสดงทันทีหลังมีการเขียนข้อมูล"""
     if table is None:
         _GAS_CACHE.clear()
+        _dash_clear()
         return
-    # ลบเฉพาะ key ของ table นั้น ๆ
+
     for k in list(_GAS_CACHE.keys()):
         if k[0] == table:
             _GAS_CACHE.pop(k, None)
+
+    # dashboard ใช้ข้อมูลกลุ่มนี้ -> เคลียร์ dashboard cache ด้วย
+    if str(table).strip().lower() in {"treatment", "medicine", "medicine_lot", "other_item", "other_lot"}:
+        _dash_clear()
 
 
 def gas_list_raw(table, limit=1000):
@@ -1606,6 +1655,11 @@ def has_supply(medicine_json_text):
 @app.get("/api/dashboard/item_master")
 @login_required
 def api_dashboard_item_master():
+    cache_key = ("item_master",)
+    cached = _dash_get(cache_key, ttl=120)
+    if cached is not None:
+        return jsonify(cached)
+
     names = []
     seen = set()
 
@@ -1632,7 +1686,9 @@ def api_dashboard_item_master():
                 names.append(name)
 
     names.sort(key=lambda s: s.lower())
-    return jsonify({"items": names})
+    payload = {"items": names}
+    _dash_set(cache_key, payload)
+    return jsonify(payload)
 
 
 @app.route("/dashboard")
@@ -1646,6 +1702,13 @@ def dashboard():
 def dashboard_drug_summary():
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
+    if not year or not month:
+        return jsonify({})
+
+    cache_key = ("drug_summary", year, month)
+    cached = _dash_get(cache_key, ttl=30)
+    if cached is not None:
+        return jsonify(cached)
 
     def norm(s):
         if s is None:
@@ -1686,9 +1749,9 @@ def dashboard_drug_summary():
         k = norm(any_name)
         return name_map.get(k)
 
+    # remain จาก medicine_lot
     lot_res = gas_list("medicine_lot", 10000)
     lots = lot_res.get("data", []) if lot_res.get("ok") else []
-
     med_id_to_name = {str(m.get("id")): str(m.get("name", "")).strip() for m in meds}
 
     for lot in lots:
@@ -1699,6 +1762,7 @@ def dashboard_drug_summary():
             result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
             result[disp]["has_lot"] = True
 
+    # remain จาก other_lot
     other_lot_res = gas_list("other_lot", 10000)
     other_lots = other_lot_res.get("data", []) if other_lot_res.get("ok") else []
 
@@ -1713,25 +1777,18 @@ def dashboard_drug_summary():
             result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
             result[disp]["has_lot"] = True
 
+    # used จาก treatment เฉพาะปี/เดือน
     treat_res = gas_list("treatment", 10000)
     treatments = treat_res.get("data", []) if treat_res.get("ok") else []
 
     for t in treatments:
-        visit_date = str(t.get("visit_date", ""))
-        if len(visit_date) < 7:
-            continue
-        try:
-            v_year = int(visit_date[:4])
-            v_month = int(visit_date[5:7])
-        except:
-            continue
-
-        if v_year != year or v_month != month:
+        y, m = _visit_year_month(t.get("visit_date"))
+        if y != year or m != month:
             continue
 
         try:
             items = json.loads(t.get("medicine", "[]"))
-        except:
+        except Exception:
             items = []
 
         if not isinstance(items, list):
@@ -1752,13 +1809,20 @@ def dashboard_drug_summary():
                 result[disp]["used"] += qty
                 result[disp]["has_used"] = True
 
+    _dash_set(cache_key, result)
     return jsonify(result)
+
 
 
 @app.route("/api/dashboard/monthly_cost")
 @login_required
 def api_dashboard_monthly_cost():
     year = request.args.get("year", type=int) or th_now().year
+
+    cache_key = ("monthly_cost", year)
+    cached = _dash_get(cache_key, ttl=30)
+    if cached is not None:
+        return jsonify(cached)
 
     months = [{"month": i, "drug": 0.0, "supply": 0.0, "other": 0.0, "total": 0.0} for i in range(1, 13)]
 
@@ -1786,22 +1850,13 @@ def api_dashboard_monthly_cost():
         return "medicine"
 
     for t in treatments:
-        visit_date = str(t.get("visit_date", ""))
-        if len(visit_date) < 7:
-            continue
-
-        try:
-            v_year = int(visit_date[:4])
-            v_month = int(visit_date[5:7])
-        except:
-            continue
-
-        if v_year != year or v_month < 1 or v_month > 12:
+        y, m = _visit_year_month(t.get("visit_date"))
+        if y != year or not m or m < 1 or m > 12:
             continue
 
         try:
             items = json.loads(t.get("medicine", "[]"))
-        except:
+        except Exception:
             items = []
 
         if not isinstance(items, list):
@@ -1824,7 +1879,7 @@ def api_dashboard_monthly_cost():
                     continue
                 price_per_unit = float(lot.get("price_per_unit", 0) or 0)
                 cost = price_per_unit * qty
-                months[v_month - 1]["other"] += cost
+                months[m - 1]["other"] += cost
                 continue
 
             lot = med_lot_cache.get(lot_id)
@@ -1841,11 +1896,11 @@ def api_dashboard_monthly_cost():
 
             cost = price_per_unit * qty
             if mtype == "medicine":
-                months[v_month - 1]["drug"] += cost
+                months[m - 1]["drug"] += cost
             elif mtype == "supply":
-                months[v_month - 1]["supply"] += cost
+                months[m - 1]["supply"] += cost
             else:
-                months[v_month - 1]["drug"] += cost
+                months[m - 1]["drug"] += cost
 
     for obj in months:
         obj["total"] = obj["drug"] + obj["supply"] + obj["other"]
@@ -1854,7 +1909,10 @@ def api_dashboard_monthly_cost():
         obj["other"] = round(obj["other"], 2)
         obj["total"] = round(obj["total"], 2)
 
-    return jsonify({"year": year, "months": months})
+    payload = {"year": year, "months": months}
+    _dash_set(cache_key, payload)
+    return jsonify(payload)
+
 
 
 @app.route("/api/dashboard/top5_month")
@@ -2049,6 +2107,126 @@ def api_dashboard_symptom_month():
     result = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
     return jsonify([{"name": k, "total": v} for k, v in result])
 
+@app.get("/api/dashboard/month_bundle")
+@login_required
+def api_dashboard_month_bundle():
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+
+    if not year or not month or month < 1 or month > 12:
+        return jsonify({"top5": [], "dept": [], "symptom": []})
+
+    cache_key = ("month_bundle", year, month)
+    cached = _dash_get(cache_key, ttl=45)
+    if cached is not None:
+        return jsonify(cached)
+
+    treat_res = gas_list("treatment", 10000)
+    treatments = _unwrap_rows(treat_res)
+
+    top_counter = {}
+    dept_counter = {}
+    symptom_counter = {}
+
+    for t in treatments:
+        y, m = _visit_year_month(t.get("visit_date"))
+        if y != year or m != month:
+            continue
+
+        dept = str(t.get("department", "")).strip()
+        if dept:
+            dept_counter[dept] = dept_counter.get(dept, 0) + 1
+
+        try:
+            items = json.loads(t.get("medicine", "[]"))
+        except Exception:
+            items = []
+
+        if not isinstance(items, list):
+            items = []
+
+        has_supply_flag = False
+        for it in items:
+            qty = _to_int(it.get("qty"), 0)
+            name = str(it.get("name") or it.get("item_name") or "").strip()
+
+            if name and qty > 0:
+                top_counter[name] = top_counter.get(name, 0) + qty
+
+            t_raw = str(it.get("type") or it.get("item_type") or "").strip().lower()
+            if t_raw in ("เวชภัณฑ์", "supply", "supplies"):
+                has_supply_flag = True
+
+        symptom_name = "เวชภัณฑ์" if has_supply_flag else (str(t.get("symptom_group", "")).strip() or "อื่นๆ")
+        symptom_counter[symptom_name] = symptom_counter.get(symptom_name, 0) + 1
+
+    payload = {
+        "top5": [{"name": k, "total": v}
+                 for k, v in sorted(top_counter.items(), key=lambda x: (-x[1], x[0]))[:5]],
+        "dept": [{"name": k, "total": v}
+                 for k, v in sorted(dept_counter.items(), key=lambda x: (-x[1], x[0]))],
+        "symptom": [{"name": k, "total": v}
+                    for k, v in sorted(symptom_counter.items(), key=lambda x: (-x[1], x[0]))]
+    }
+
+    _dash_set(cache_key, payload)
+    return jsonify(payload)
+
+
+@app.get("/api/dashboard/year_bundle")
+@login_required
+def api_dashboard_year_bundle():
+    year = request.args.get("year", type=int)
+    if not year:
+        return jsonify({"top5": [], "dept": [], "symptom": []})
+
+    cache_key = ("year_bundle", year)
+    cached = _dash_get(cache_key, ttl=45)
+    if cached is not None:
+        return jsonify(cached)
+
+    treat_res = gas_list("treatment", 10000)
+    treatments = _unwrap_rows(treat_res)
+
+    top_counter = {}
+    dept_counter = {}
+    symptom_counter = {}
+
+    for t in treatments:
+        y, _m = _visit_year_month(t.get("visit_date"))
+        if y != year:
+            continue
+
+        dept = str(t.get("department", "")).strip()
+        if dept:
+            dept_counter[dept] = dept_counter.get(dept, 0) + 1
+
+        symptom = str(t.get("symptom_group", "")).strip() or "อื่นๆ"
+        symptom_counter[symptom] = symptom_counter.get(symptom, 0) + 1
+
+        try:
+            items = json.loads(t.get("medicine", "[]"))
+        except Exception:
+            items = []
+
+        if isinstance(items, list):
+            for it in items:
+                qty = _to_int(it.get("qty"), 0)
+                name = str(it.get("name") or it.get("item_name") or "").strip()
+                if name and qty > 0:
+                    top_counter[name] = top_counter.get(name, 0) + qty
+
+    payload = {
+        "top5": [{"name": k, "total": v}
+                 for k, v in sorted(top_counter.items(), key=lambda x: (-x[1], x[0]))[:5]],
+        "dept": [{"name": k, "total": v}
+                 for k, v in sorted(dept_counter.items(), key=lambda x: (-x[1], x[0]))],
+        "symptom": [{"name": k, "total": v}
+                    for k, v in sorted(symptom_counter.items(), key=lambda x: (-x[1], x[0]))]
+    }
+
+    _dash_set(cache_key, payload)
+    return jsonify(payload)
 
 # ============================================
 # MEDICAL CERTIFICATE
