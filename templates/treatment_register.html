@@ -351,6 +351,81 @@
       pointer-events: none;
       opacity: .55;
     }
+
+    /* ===== ปรับปุ่มเพิ่ม/ลบ ในหน้าแก้ไขข้อมูลการรักษา ===== */
+    #page-edit .medicine-group .med-row-controls {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+
+    #page-edit .medicine-group .med-row-controls #medicine_select { flex: 3; }
+    #page-edit .medicine-group .med-row-controls #medicine_other { flex: 3; }
+    #page-edit .medicine-group .med-row-controls #lot_select { flex: 2; }
+    #page-edit .medicine-group .med-row-controls #qty_input { flex: 1; min-width: 120px; }
+
+    #page-edit .medicine-group .med-row-controls select,
+    #page-edit .medicine-group .med-row-controls input[type="text"],
+    #page-edit .medicine-group .med-row-controls input[type="number"] {
+      min-height: 58px;
+      font-size: 24px;
+      border-radius: 12px;
+    }
+
+    #page-edit .medicine-group .btn-add-med {
+      flex: 1.15;
+      min-width: 190px;
+      min-height: 58px;
+      border: 1px solid #1e88e5;
+      border-radius: 12px;
+      background: #42a5f5;   /* ช่องสีฟ้า */
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(30, 136, 229, 0.25);
+      transition: all .15s ease;
+    }
+    #page-edit .medicine-group .btn-add-med:hover {
+      background: #1e88e5;
+    }
+    #page-edit .medicine-group .btn-add-med:active {
+      transform: translateY(1px);
+    }
+
+    /* ปุ่มลบในตารางยา */
+    #page-edit #medicine_table td:last-child,
+    #page-edit #medicine_table th:last-child {
+      width: 120px;
+    }
+    #page-edit .btn-del-med {
+      width: 64px;
+      height: 52px;
+      border: none;
+      border-radius: 12px;
+      background: #ef5350;
+      color: #fff;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(239, 83, 80, 0.25);
+      transition: all .15s ease;
+    }
+    #page-edit .btn-del-med:hover {
+      background: #e53935;
+    }
+    #page-edit .btn-del-med:active {
+      transform: scale(0.97);
+    }
+
   </style>
 </head>
 
@@ -452,21 +527,21 @@
 
         <label>ยาที่ได้รับ / เวชภัณฑ์</label>
         <div class="medicine-group">
-          <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-            <select id="medicine_select" style="flex:3;">
+          <div class="med-row-controls">
+            <select id="medicine_select">
               <option value="">-- เลือกรายการ --</option>
             </select>
 
-            <input type="text" id="medicine_other" placeholder="กรอกชื่อยา/เวชภัณฑ์" style="flex:3; display:none;">
+            <input type="text" id="medicine_other" placeholder="กรอกชื่อยา/เวชภัณฑ์" style="display:none;">
 
-            <select id="lot_select" style="flex:2;">
+            <select id="lot_select">
               <option value="">Lot</option>
             </select>
 
-            <input type="number" id="qty_input" placeholder="จำนวน" style="flex:1;">
+            <input type="number" id="qty_input" placeholder="จำนวน">
 
-            <button type="button" onclick="addMedicine()" style="flex:1;">
-              ➕ เพิ่ม
+            <button type="button" class="btn-add-med" onclick="addMedicine()">
+              <i class="fa-solid fa-plus"></i> เพิ่ม
             </button>
           </div>
 
@@ -731,11 +806,16 @@
               <td>${safeText(m.lot)}</td>
               <td>${safeText(m.qty)}</td>
               <td>${safeText(m.price)}</td>
-              <td><button type="button" onclick="removeMedicine(${i})">🗑️</button></td>
+              <td>
+                <button type="button" class="btn-del-med" onclick="removeMedicine(${i})" title="ลบรายการ">
+                  🗑️
+                </button>
+              </td>
             </tr>
           `;
         });
       }
+
       function removeMedicine(i) {
         editMedicines.splice(i, 1);
         renderMedicineTable();
