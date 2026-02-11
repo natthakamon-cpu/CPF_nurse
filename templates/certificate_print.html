@@ -29,8 +29,6 @@
       .checkbox { width: 12px; height: 12px; border: 1px solid #000; display: inline-block; margin: 0 2px; vertical-align: middle; position: relative; }
       .checkbox.checked::before { content: "✓"; font-size: 10pt; font-weight: 700; position: absolute; left: 0; top: -3px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 
-      .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 3px 0; }
-      .health-item { margin-bottom: 3px; font-size: 12pt; }
       .signature-area { text-align: right; margin-top: 4px; font-size: 12pt; }
 
       .note-section { margin-top: 5px; font-size: 10pt; line-height: 1.3; }
@@ -95,6 +93,39 @@
         line-height:1.38;
         font-size:11pt;
       }
+
+      /* ===== ส่วนประวัติสุขภาพ (ส่วนที่ 1) ให้เรียงทีละข้อ คนละบรรทัด ===== */
+      .health-history{
+        margin: 2px 0 4px 20px;   /* ชิดซ้ายแนวเดียวกับบรรทัดข้างบน */
+      }
+
+      .health-row{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0;
+        line-height: 1.45;
+        font-size: 12pt;
+      }
+
+      .health-row .title{
+        white-space: nowrap;
+        min-width: 265px; /* ให้เลขข้อ + ชื่อหัวข้อระยะคงที่ */
+      }
+
+      .health-row .choices{
+        white-space: nowrap;
+      }
+
+      .health-row .detail-line{
+        flex: 1 1 auto;   /* ยืดเส้นจุดไปทางขวา */
+        min-width: 140px;
+      }
+
+      .health-row.row-4 .title{
+        min-width: 0;     /* ข้อ 4 ไม่มี checkbox */
+      }
+
     </style>
   </head>
 
@@ -157,45 +188,40 @@
             <span>ข้าพเจ้าขอรับใบรับรองสุขภาพ โดยมีประวัติสุขภาพดังนี้</span>
           </div>
 
-          <div class="two-col">
-            <div>
-              <div class="health-item">
-                <div>1. โรคประจำตัว</div>
-                <div style="margin-left: 12px">
-                  <span class="checkbox" id="disease-no"></span> ไม่มี
-                  <span class="checkbox" id="disease-yes"></span> มี (ระบุ)
-                  <span class="underline has-underline" style="min-width: 100px" id="disease-detail">_______</span>
-                </div>
-              </div>
-
-              <div class="health-item">
-                <div>2. อุบัติเหตุ และ ผ่าตัด</div>
-                <div style="margin-left: 12px">
-                  <span class="checkbox" id="accident-no"></span> ไม่มี
-                  <span class="checkbox" id="accident-yes"></span> มี (ระบุ)
-                  <span class="underline has-underline" style="min-width: 100px" id="accident-detail">_______</span>
-                </div>
-              </div>
+          <div class="health-history">
+            <div class="health-row">
+              <span class="title">1. โรคประจำตัว</span>
+              <span class="choices">
+                <span class="checkbox" id="disease-no"></span> ไม่มี
+                <span class="checkbox" id="disease-yes"></span> มี (ระบุ)
+              </span>
+              <span class="underline has-underline detail-line" id="disease-detail">________________</span>
             </div>
 
-            <div>
-              <div class="health-item">
-                <div>3. เคยเข้ารับการรักษาในโรงพยาบาล</div>
-                <div style="margin-left: 12px">
-                  <span class="checkbox" id="hospital-no"></span> ไม่มี
-                  <span class="checkbox" id="hospital-yes"></span> มี (ระบุ)
-                  <span class="underline has-underline" style="min-width: 90px" id="hospital-detail">_______</span>
-                </div>
-              </div>
+            <div class="health-row">
+              <span class="title">2. อุบัติเหตุ และ ผ่าตัด</span>
+              <span class="choices">
+                <span class="checkbox" id="accident-no"></span> ไม่มี
+                <span class="checkbox" id="accident-yes"></span> มี (ระบุ)
+              </span>
+              <span class="underline has-underline detail-line" id="accident-detail">________________</span>
+            </div>
 
-              <div class="health-item">
-                <div>4. ประวัติอื่นที่สำคัญ</div>
-                <div style="margin-left: 12px">
-                  <span class="underline has-underline" style="min-width: 200px" id="other-history">_______</span>
-                </div>
-              </div>
+            <div class="health-row">
+              <span class="title">3. เคยเข้ารับการรักษาในโรงพยาบาล</span>
+              <span class="choices">
+                <span class="checkbox" id="hospital-no"></span> ไม่มี
+                <span class="checkbox" id="hospital-yes"></span> มี (ระบุ)
+              </span>
+              <span class="underline has-underline detail-line" id="hospital-detail">________________</span>
+            </div>
+
+            <div class="health-row row-4">
+              <span class="title">4. ประวัติอื่นที่สำคัญ</span>
+              <span class="underline has-underline detail-line" id="other-history">________________</span>
             </div>
           </div>
+
 
           <div class="signature-area">
             <div style="margin-top: 3px">
