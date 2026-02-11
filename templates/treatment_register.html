@@ -241,6 +241,12 @@
       cursor: pointer;
     }
 
+    .btn-save[disabled] {
+      opacity: .65;
+      cursor: not-allowed;
+      filter: grayscale(.1);
+    }
+
     .btn-cancel {
       background: #e53935;
       color: #fff;
@@ -360,10 +366,22 @@
       margin-bottom: 12px;
     }
 
-    #page-edit .medicine-group .med-row-controls #medicine_select { flex: 3; }
-    #page-edit .medicine-group .med-row-controls #medicine_other { flex: 3; }
-    #page-edit .medicine-group .med-row-controls #lot_select { flex: 2; }
-    #page-edit .medicine-group .med-row-controls #qty_input { flex: 1; min-width: 120px; }
+    #page-edit .medicine-group .med-row-controls #medicine_select {
+      flex: 3;
+    }
+
+    #page-edit .medicine-group .med-row-controls #medicine_other {
+      flex: 3;
+    }
+
+    #page-edit .medicine-group .med-row-controls #lot_select {
+      flex: 2;
+    }
+
+    #page-edit .medicine-group .med-row-controls #qty_input {
+      flex: 1;
+      min-width: 120px;
+    }
 
     #page-edit .medicine-group .med-row-controls select,
     #page-edit .medicine-group .med-row-controls input[type="text"],
@@ -379,7 +397,7 @@
       min-height: 58px;
       border: 1px solid #1e88e5;
       border-radius: 12px;
-      background: #42a5f5;   /* ช่องสีฟ้า */
+      background: #42a5f5;
       color: #ffffff;
       font-size: 24px;
       font-weight: 700;
@@ -391,9 +409,11 @@
       box-shadow: 0 4px 10px rgba(30, 136, 229, 0.25);
       transition: all .15s ease;
     }
+
     #page-edit .medicine-group .btn-add-med:hover {
       background: #1e88e5;
     }
+
     #page-edit .medicine-group .btn-add-med:active {
       transform: translateY(1px);
     }
@@ -403,6 +423,7 @@
     #page-edit #medicine_table th:last-child {
       width: 120px;
     }
+
     #page-edit .btn-del-med {
       width: 64px;
       height: 52px;
@@ -419,13 +440,14 @@
       box-shadow: 0 4px 10px rgba(239, 83, 80, 0.25);
       transition: all .15s ease;
     }
+
     #page-edit .btn-del-med:hover {
       background: #e53935;
     }
+
     #page-edit .btn-del-med:active {
       transform: scale(0.97);
     }
-
   </style>
 </head>
 
@@ -479,7 +501,6 @@
       <form id="editForm">
         <input type="hidden" id="edit_id">
 
-        <!-- PATCH: datetime-local -->
         <label>วันที่และเวลาเข้ารับการรักษา</label>
         <input type="datetime-local" name="visit_date" id="edit_date" step="1" required>
 
@@ -617,12 +638,13 @@
         return symptomLabelMap[code] || code;
       }
 
-      // ===== PATCH: helper datetime-local =====
       function pad2(n) { return String(n).padStart(2, "0"); }
+
       function nowDateTimeLocal() {
         const d = new Date();
         return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
       }
+
       function toDateTimeLocalValue(raw) {
         if (!raw) return "";
         const s = String(raw).trim();
@@ -634,7 +656,8 @@
 
         // YYYY-MM-DD HH:mm[:ss]
         if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/.test(s)) {
-          return s.replace(" ", "T").length === 16 ? s.replace(" ", "T") + ":00" : s.replace(" ", "T");
+          const t = s.replace(" ", "T");
+          return t.length === 16 ? `${t}:00` : t;
         }
 
         // ISO string
@@ -756,7 +779,10 @@
         document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
         document.getElementById(id).classList.add("active");
       }
-      function back() { switchPage("page-list"); }
+
+      function back() {
+        switchPage("page-list");
+      }
 
       function viewRecord(id) {
         fetch(`/api/treatment/${id}`, { cache: "no-store" })
@@ -778,6 +804,10 @@
               <p><b>รายละเอียดความคิดเห็นของแพทย์:</b> ${safeText(d.doctor_opinion)}</p>
             `;
             switchPage("page-view");
+          })
+          .catch(err => {
+            console.error(err);
+            alert("โหลดข้อมูลไม่สำเร็จ");
           });
       }
 
@@ -792,15 +822,95 @@
       const edit_allergy_detail = document.getElementById("edit_allergy_detail");
       const edit_doctor_opinion = document.getElementById("edit_doctor_opinion");
 
+      const editFormEl = document.getElementById("editForm");
+      const saveBtnEl = editFormEl.querySelector(".btn-save");
+      let isSavingEdit = false;
+
+      function setSavingEdit(state) {
+        isSavingEdit = state;
+        if (!saveBtnEl) return;
+        saveBtnEl.disabled = state;
+        saveBtnEl.textContent = state ? "⏳ กำลังบันทึก..." : "💾 บันทึกการแก้ไข";
+      }
+
+      function toVisitRawFromLocal(localVal) {
+        // "2026-02-11T10:20:30" -> "2026-02-11 10:20:30"
+        return localVal ? localVal.replace("T", " ") : "";
+      }
+
+      function upsertRecordInCache(rec) {
+        const idNum = Number(rec.id);
+        const idx = allRecords.findIndex(x => Number(x.id) === idNum);
+        if (idx >= 0) {
+          allRecords[idx] = { ...allRecords[idx], ...rec };
+        } else {
+          allRecords.unshift(rec);
+        }
+      }
+
+      function buildEditedRecordFromForm(existing = {}) {
+        const allergyEl = document.querySelector('input[name="allergy"]:checked');
+        const occEl = document.querySelector('input[name="occupational_disease"]:checked');
+        const visitRaw = toVisitRawFromLocal(edit_date.value);
+
+        return {
+          ...existing,
+          id: Number(edit_id.value),
+          visit_date: visitRaw || existing.visit_date || "",
+          visit_date_raw: visitRaw || existing.visit_date_raw || "",
+          visit_date_display: visitRaw || existing.visit_date_display || "",
+          patient_name: (edit_name.value || "").trim(),
+          department: edit_department.value || "",
+          symptom_group: edit_symptom_group.value || "",
+          symptom_detail: edit_symptom.value || "",
+          medicine: JSON.stringify(editMedicines || []),
+          allergy: allergyEl ? Number(allergyEl.value) : Number(existing.allergy || 0),
+          allergy_detail: edit_allergy_detail.value || "",
+          occupational_disease: occEl ? Number(occEl.value) : Number(existing.occupational_disease || 0),
+          doctor_opinion: edit_doctor_opinion.value || ""
+        };
+      }
+
+      async function syncEditedRecordFromServer(id) {
+        // ดึงเฉพาะรายการที่เพิ่งแก้ไขมา sync ให้ข้อมูลตรง backend
+        try {
+          const res = await fetch(`/api/treatment/${id}`, { cache: "no-store" });
+          const r = await res.json();
+          if (!r.success || !r.data) return;
+
+          const d = r.data;
+          upsertRecordInCache({
+            id: Number(d.id),
+            visit_date: d.visit_date ?? d.visit_date_raw ?? "",
+            visit_date_raw: d.visit_date_raw ?? d.visit_date ?? "",
+            visit_date_display: d.visit_date_display ?? d.visit_date ?? "",
+            patient_name: d.patient_name ?? "",
+            department: d.department ?? "",
+            symptom_group: d.symptom_group ?? "",
+            symptom_detail: d.symptom_detail ?? "",
+            medicine: d.medicine ?? "[]",
+            allergy: Number(d.allergy ?? 0),
+            allergy_detail: d.allergy_detail ?? "",
+            occupational_disease: Number(d.occupational_disease ?? 0),
+            doctor_opinion: d.doctor_opinion ?? ""
+          });
+
+          renderTable(getFilteredRecordsFromInput());
+        } catch (e) {
+          console.warn("syncEditedRecordFromServer failed:", e);
+        }
+      }
+
       function renderMedicineTable() {
         const table = document.getElementById("medicine_table");
-        table.innerHTML = `
+        let html = `
           <tr>
             <th>ยา</th><th>Lot</th><th>จำนวน</th><th>ราคา</th><th>ลบ</th>
           </tr>
         `;
+
         editMedicines.forEach((m, i) => {
-          table.innerHTML += `
+          html += `
             <tr>
               <td>${safeText(m.name)}</td>
               <td>${safeText(m.lot)}</td>
@@ -814,6 +924,8 @@
             </tr>
           `;
         });
+
+        table.innerHTML = html;
       }
 
       function removeMedicine(i) {
@@ -840,16 +952,46 @@
             edit_allergy_detail.value = d.allergy_detail || "";
             edit_doctor_opinion.value = d.doctor_opinion || "";
 
+            // reset radio ก่อน
+            document.querySelectorAll('input[name="occupational_disease"]').forEach(el => el.checked = false);
+            document.querySelectorAll('input[name="allergy"]').forEach(el => el.checked = false);
+
             const occ = document.querySelector(`input[name="occupational_disease"][value="${d.occupational_disease}"]`);
             if (occ) occ.checked = true;
 
             const al = document.querySelector(`input[name="allergy"][value="${d.allergy}"]`);
             if (al) al.checked = true;
 
-            editMedicines = [];
-            try { editMedicines = JSON.parse(d.medicine || "[]"); } catch (e) { }
-            renderMedicineTable();
+            // reset medicine selector state
+            medSelect.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+            lotSelect.innerHTML = '<option value="">Lot</option>';
+            medSelect.style.display = 'block';
+            medOther.style.display = 'none';
+            medOther.value = '';
+            qtyInput.value = '';
 
+            // เติมรายการยา dropdown ตามกลุ่มอาการที่โหลดมา
+            if (edit_symptom_group.value === 'other') {
+              medSelect.style.display = 'none';
+              medOther.style.display = 'block';
+            } else {
+              (medicineData[edit_symptom_group.value] || []).forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item;
+                opt.textContent = item;
+                medSelect.appendChild(opt);
+              });
+            }
+
+            editMedicines = [];
+            try {
+              editMedicines = JSON.parse(d.medicine || "[]");
+            } catch (e) {
+              editMedicines = [];
+            }
+
+            renderMedicineTable();
+            setSavingEdit(false);
             switchPage("page-edit");
           })
           .catch(err => {
@@ -922,10 +1064,6 @@
         }
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        loadRecords();
-      });
-
       const medSelect = document.getElementById("medicine_select");
       const medOther = document.getElementById("medicine_other");
       const lotSelect = document.getElementById("lot_select");
@@ -959,6 +1097,7 @@
         lotSelect.innerHTML = '<option value="">Lot</option>';
         medSelect.style.display = 'block';
         medOther.style.display = 'none';
+        medOther.value = '';
 
         if (edit_symptom_group.value === 'other') {
           medSelect.style.display = 'none';
@@ -1006,9 +1145,10 @@
       });
 
       function addMedicine() {
-        const name = medSelect.value || medOther.value;
-        const lotText = lotSelect.options[lotSelect.selectedIndex]?.text || "";
+        const isOther = edit_symptom_group.value === 'other';
+        const name = (isOther ? medOther.value : medSelect.value).trim();
         const lotId = lotSelect.value;
+        const lotText = lotSelect.options[lotSelect.selectedIndex]?.text || "";
         const qty = parseInt(qtyInput.value, 10);
 
         if (!name || !lotId || !qty) {
@@ -1021,7 +1161,7 @@
           lot: lotText,
           lot_id: lotId,
           qty: qty,
-          price: lotSelect.options[lotSelect.selectedIndex].dataset.price || "-"
+          price: lotSelect.options[lotSelect.selectedIndex]?.dataset.price || "-"
         });
 
         renderMedicineTable();
@@ -1029,36 +1169,86 @@
         lotSelect.innerHTML = '<option value="">Lot</option>';
       }
 
-      document.getElementById("editForm").addEventListener("submit", e => {
+      editFormEl.addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (isSavingEdit) return;
 
-        fetch(`/api/treatment/edit/${edit_id.value}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({
-            visit_date: edit_date.value, // PATCH: datetime-local
-            patient_name: edit_name.value,
-            department: edit_department.value,
-            symptom_group: edit_symptom_group.value,
-            symptom_detail: edit_symptom.value,
-            medicine: JSON.stringify(editMedicines),
-            allergy: document.querySelector('input[name="allergy"]:checked').value,
-            allergy_detail: edit_allergy_detail.value,
-            occupational_disease: document.querySelector('input[name="occupational_disease"]:checked').value,
-            doctor_opinion: edit_doctor_opinion.value
-          })
-        })
-          .then(res => res.json())
-          .then(async r => {
-            if (!r.success) {
-              alert("บันทึกไม่สำเร็จ");
-              return;
-            }
-            alert("✅ บันทึกเรียบร้อย");
-            await loadRecords();
-            switchPage("page-list");
+        const allergyEl = document.querySelector('input[name="allergy"]:checked');
+        const occEl = document.querySelector('input[name="occupational_disease"]:checked');
+
+        if (!allergyEl) {
+          showToast("❌ กรุณาเลือกประวัติแพ้ยา", "error", 1800);
+          return;
+        }
+        if (!occEl) {
+          showToast("❌ กรุณาเลือกเข้าข่ายโรคจากการประกอบอาชีพ", "error", 1800);
+          return;
+        }
+
+        const idNum = Number(edit_id.value);
+        const payload = {
+          visit_date: edit_date.value,
+          patient_name: edit_name.value,
+          department: edit_department.value,
+          symptom_group: edit_symptom_group.value,
+          symptom_detail: edit_symptom.value,
+          medicine: JSON.stringify(editMedicines),
+          allergy: allergyEl.value,
+          allergy_detail: edit_allergy_detail.value,
+          occupational_disease: occEl.value,
+          doctor_opinion: edit_doctor_opinion.value
+        };
+
+        setSavingEdit(true);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        try {
+          const res = await fetch(`/api/treatment/edit/${idNum}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            signal: controller.signal,
+            body: JSON.stringify(payload)
           });
+
+          const r = await res.json().catch(() => ({}));
+          if (!res.ok || !r.success) {
+            throw new Error(r?.error || "บันทึกไม่สำเร็จ");
+          }
+
+          // 1) อัปเดต cache ทันที (ไม่ต้องโหลดทั้งตารางใหม่)
+          if (r.updated_record) {
+            upsertRecordInCache(r.updated_record);
+          } else {
+            const existing = allRecords.find(x => Number(x.id) === idNum) || {};
+            const localEdited = buildEditedRecordFromForm(existing);
+            upsertRecordInCache(localEdited);
+          }
+
+          // 2) กลับหน้ารายการทันที
+          switchPage("page-list");
+          renderTable(getFilteredRecordsFromInput());
+          showToast("✅ บันทึกเรียบร้อย", "success", 1500);
+
+          // 3) sync เฉพาะรายการนี้แบบ background
+          syncEditedRecordFromServer(idNum);
+
+        } catch (err) {
+          console.error(err);
+          const msg = (err && err.name === "AbortError")
+            ? "❌ บันทึกไม่สำเร็จ (หมดเวลาเชื่อมต่อ)"
+            : "❌ บันทึกไม่สำเร็จ";
+          showToast(msg, "error", 2200);
+        } finally {
+          clearTimeout(timeoutId);
+          setSavingEdit(false);
+        }
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadRecords();
       });
     </script>
 
@@ -1067,6 +1257,7 @@
     </div>
 
     <div id="toast" class="toast"></div>
+  </div>
 </body>
 
 </html>
