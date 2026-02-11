@@ -1651,44 +1651,143 @@ def has_supply(medicine_json_text):
     except:
         return False
 
+def _dash_norm_name(s):
+    s = str(s or "").strip().lower()
+    for ch in ("–", "—", "−"):
+        s = s.replace(ch, "-")
+    s = " ".join(s.split())
+    return s
+
+
+def _build_drug_master_and_remain():
+    """
+    สร้าง master ชื่อยา/เวชภัณฑ์/อื่นๆ + remain รวมจาก lot
+    cache ยาวขึ้นเพราะ invalidate อัตโนมัติเมื่อมีการเขียนข้อมูล
+    """
+    cache_key = ("drug_master_remain_v2",)
+    cached = _dash_get(cache_key, ttl=180)
+    if cached is not None:
+        return cached
+
+    meds = _unwrap_rows(gas_list_cached("medicine", limit=5000, ttl=90))
+    others = _unwrap_rows(gas_list_cached("other_item", limit=5000, ttl=90))
+    med_lots = _unwrap_rows(gas_list_cached("medicine_lot", limit=10000, ttl=90))
+    other_lots = _unwrap_rows(gas_list_cached("other_lot", limit=10000, ttl=90))
+
+    key_to_display = {}   # norm_name -> display_name
+    remain_by_key = {}    # norm_name -> {"remain": int, "has_lot": bool}
+    med_id_to_key = {}    # medicine_id -> norm_name
+
+    def add_name(raw_name):
+        display = norm_text(raw_name)
+        if not display:
+            return ""
+        k = _dash_norm_name(display)
+        if k and k not in key_to_display:
+            key_to_display[k] = display
+        return k
+
+    def add_remain(k, qty):
+        if not k:
+            return
+        box = remain_by_key.setdefault(k, {"remain": 0, "has_lot": False})
+        box["remain"] += max(0, _to_int(qty, 0))
+        box["has_lot"] = True
+
+    # master from medicine
+    for m in meds:
+        k = add_name(m.get("name", ""))
+        mid = str(m.get("id", "")).strip()
+        if k and mid:
+            med_id_to_key[mid] = k
+
+    # master from other_item
+    for o in others:
+        add_name(o.get("name") or o.get("item_name") or "")
+
+    # remain from medicine_lot
+    for lot in med_lots:
+        mid = str(lot.get("medicine_id", "")).strip()
+        k = med_id_to_key.get(mid)
+        if not k:
+            # fallback ถ้า lot มี item_name แต่ medicine หาย
+            k = add_name(lot.get("item_name", ""))
+        add_remain(k, lot.get("qty_remain", 0))
+
+    # remain from other_lot
+    for lot in other_lots:
+        k = add_name(lot.get("item_name", ""))
+        add_remain(k, lot.get("qty_remain", 0))
+
+    items = sorted(key_to_display.values(), key=lambda s: s.lower())
+
+    payload = {
+        "items": items,
+        "key_to_display": key_to_display,
+        "remain_by_key": remain_by_key
+    }
+    _dash_set(cache_key, payload)
+    return payload
+
+
+def _build_drug_used_month_index():
+    """
+    สร้างดัชนี used แยกตามเดือนครั้งเดียว:
+    used_index["YYYY-MM"][norm_name] = used_qty
+    """
+    cache_key = ("drug_used_month_index_v2",)
+    cached = _dash_get(cache_key, ttl=120)
+    if cached is not None:
+        return cached
+
+    treatments = _unwrap_rows(gas_list_cached("treatment", limit=10000, ttl=60))
+    used_index = {}
+    display_by_key = {}
+
+    for t in treatments:
+        y, m = _visit_year_month(t.get("visit_date"))
+        if not y or not m:
+            continue
+
+        ym = f"{y:04d}-{m:02d}"
+        bucket = used_index.setdefault(ym, {})
+
+        try:
+            items = json.loads(t.get("medicine", "[]"))
+        except Exception:
+            items = []
+
+        if not isinstance(items, list):
+            continue
+
+        for it in items:
+            qty = _to_int(it.get("qty"), 0)
+            raw_name = norm_text(it.get("name") or it.get("item_name") or "")
+            if not raw_name or qty <= 0:
+                continue
+
+            k = _dash_norm_name(raw_name)
+            if not k:
+                continue
+
+            if k not in display_by_key:
+                display_by_key[k] = raw_name
+
+            bucket[k] = bucket.get(k, 0) + qty
+
+    payload = {
+        "used_index": used_index,
+        "display_by_key": display_by_key
+    }
+    _dash_set(cache_key, payload)
+    return payload
 
 @app.get("/api/dashboard/item_master")
 @login_required
 def api_dashboard_item_master():
-    cache_key = ("item_master",)
-    cached = _dash_get(cache_key, ttl=120)
-    if cached is not None:
-        return jsonify(cached)
+    master = _build_drug_master_and_remain()
+    return jsonify({"items": master.get("items", [])})
 
-    names = []
-    seen = set()
-
-    med_res = gas_list("medicine", 5000)
-    if med_res.get("ok"):
-        for m in med_res.get("data", []):
-            name = norm_text(m.get("name", ""))
-            if not name:
-                continue
-            k = norm_key(name)
-            if k not in seen:
-                seen.add(k)
-                names.append(name)
-
-    other_res = gas_list("other_item", 5000)
-    if other_res.get("ok"):
-        for o in other_res.get("data", []):
-            name = norm_text(o.get("name") or o.get("item_name") or "")
-            if not name:
-                continue
-            k = norm_key(name)
-            if k not in seen:
-                seen.add(k)
-                names.append(name)
-
-    names.sort(key=lambda s: s.lower())
-    payload = {"items": names}
-    _dash_set(cache_key, payload)
-    return jsonify(payload)
 
 
 @app.route("/dashboard")
@@ -1702,115 +1801,54 @@ def dashboard():
 def dashboard_drug_summary():
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
-    if not year or not month:
+    if not year or not month or month < 1 or month > 12:
         return jsonify({})
 
-    cache_key = ("drug_summary", year, month)
-    cached = _dash_get(cache_key, ttl=30)
+    cache_key = ("drug_summary_v2", year, month)
+    cached = _dash_get(cache_key, ttl=90)
     if cached is not None:
         return jsonify(cached)
 
-    def norm(s):
-        if s is None:
-            return ""
-        s = str(s).strip().lower()
-        for ch in ["–", "—", "-", "−"]:
-            s = s.replace(ch, "-")
-        s = " ".join(s.split())
-        return s
+    master = _build_drug_master_and_remain()
+    used_pack = _build_drug_used_month_index()
 
-    med_res = gas_list("medicine", 5000)
-    meds = med_res.get("data", []) if med_res.get("ok") else []
+    key_to_display = master.get("key_to_display", {}) or {}
+    remain_by_key = master.get("remain_by_key", {}) or {}
+    used_index = used_pack.get("used_index", {}) or {}
+    display_by_key = used_pack.get("display_by_key", {}) or {}
 
-    other_res = gas_list("other_item", 5000)
-    others = other_res.get("data", []) if other_res.get("ok") else []
+    ym = f"{year:04d}-{month:02d}"
+    used_map = used_index.get(ym, {}) or {}
 
     result = {}
-    name_map = {}
 
-    def add_master_name(display_name: str):
-        display_name = str(display_name or "").strip()
-        if not display_name:
-            return
-        key = norm(display_name)
-        if key not in name_map:
-            name_map[key] = display_name
-        disp = name_map[key]
-        if disp not in result:
-            result[disp] = {"used": 0, "remain": 0, "has_used": False, "has_lot": False}
+    # เติมข้อมูลจาก master ก่อน (มีทุกชื่อในระบบ)
+    for k, display in key_to_display.items():
+        rem_obj = remain_by_key.get(k, {})
+        used_qty = int(used_map.get(k, 0) or 0)
 
-    for m in meds:
-        add_master_name(m.get("name", ""))
+        result[display] = {
+            "used": used_qty,
+            "remain": int(rem_obj.get("remain", 0) or 0),
+            "has_used": used_qty > 0,
+            "has_lot": bool(rem_obj.get("has_lot", False))
+        }
 
-    for o in others:
-        add_master_name(o.get("name") or o.get("item_name") or "")
-
-    def to_display(any_name):
-        k = norm(any_name)
-        return name_map.get(k)
-
-    # remain จาก medicine_lot
-    lot_res = gas_list("medicine_lot", 10000)
-    lots = lot_res.get("data", []) if lot_res.get("ok") else []
-    med_id_to_name = {str(m.get("id")): str(m.get("name", "")).strip() for m in meds}
-
-    for lot in lots:
-        med_id = str(lot.get("medicine_id", ""))
-        med_name = med_id_to_name.get(med_id, "")
-        disp = to_display(med_name)
-        if disp and disp in result:
-            result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
-            result[disp]["has_lot"] = True
-
-    # remain จาก other_lot
-    other_lot_res = gas_list("other_lot", 10000)
-    other_lots = other_lot_res.get("data", []) if other_lot_res.get("ok") else []
-
-    for lot in other_lots:
-        item_name = str(lot.get("item_name", "")).strip()
-        disp = to_display(item_name)
-        if not disp:
-            add_master_name(item_name)
-            disp = to_display(item_name)
-
-        if disp and disp in result:
-            result[disp]["remain"] += int(lot.get("qty_remain", 0) or 0)
-            result[disp]["has_lot"] = True
-
-    # used จาก treatment เฉพาะปี/เดือน
-    treat_res = gas_list("treatment", 10000)
-    treatments = treat_res.get("data", []) if treat_res.get("ok") else []
-
-    for t in treatments:
-        y, m = _visit_year_month(t.get("visit_date"))
-        if y != year or m != month:
+    # เผื่อชื่อที่มีใน treatment แต่ยังไม่อยู่ master
+    for k, used_qty in used_map.items():
+        if k in key_to_display:
             continue
-
-        try:
-            items = json.loads(t.get("medicine", "[]"))
-        except Exception:
-            items = []
-
-        if not isinstance(items, list):
-            continue
-
-        for it in items:
-            name = str(it.get("name") or it.get("item_name") or "").strip()
-            qty = int(it.get("qty", 0) or 0)
-            if not name or qty <= 0:
-                continue
-
-            disp = to_display(name)
-            if not disp:
-                add_master_name(name)
-                disp = to_display(name)
-
-            if disp and disp in result:
-                result[disp]["used"] += qty
-                result[disp]["has_used"] = True
+        display = display_by_key.get(k) or k
+        row = result.get(display)
+        if not row:
+            row = {"used": 0, "remain": 0, "has_used": False, "has_lot": False}
+            result[display] = row
+        row["used"] += int(used_qty or 0)
+        row["has_used"] = row["used"] > 0
 
     _dash_set(cache_key, result)
     return jsonify(result)
+
 
 
 
