@@ -583,10 +583,15 @@
     let yearReqToken = 0;
     let monthAbortCtrl = null;
     let yearAbortCtrl = null;
+    let drugReqToken = 0;
+    let drugAbortCtrl = null;
+    let masterLoadingPromise = null;
 
     const monthBundleCache = new Map();
     const yearBundleCache = new Map();
     const costYearCache = new Map();
+    const drugTableCache = new Map(); // key -> { ts, data }
+    const DRUG_TABLE_TTL_MS = 30 * 1000;
 
     const monthLabels = ["ม.ค", "ก.พ", "มี.ค", "เม.ย", "พ.ค", "มิ.ย", "ก.ค", "ส.ค", "ก.ย", "ต.ค", "พ.ย", "ธ.ค"];
 
@@ -908,50 +913,122 @@
     }
 
     // ================= DRUG TABLE =================
-    async function loadMasterItems() {
+    function getDrugTableCache(key) {
+      const row = drugTableCache.get(key);
+      if (!row) return null;
+      if (Date.now() - row.ts > DRUG_TABLE_TTL_MS) {
+        drugTableCache.delete(key);
+        return null;
+      }
+      return row.data;
+    }
+
+    function setDrugTableCache(key, data) {
+      drugTableCache.set(key, { ts: Date.now(), data });
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function ensureMasterItems() {
+      if (allItems.length) return allItems;
+      if (masterLoadingPromise) return masterLoadingPromise;
+
+      masterLoadingPromise = (async () => {
+        try {
+          const j = await fetchJson("/api/dashboard/item_master");
+          allItems = (j.items || []).filter(Boolean);
+          allItems.sort((a, b) => a.localeCompare(b, "th"));
+        } catch (e) {
+          console.error("โหลด master items ล้มเหลว:", e);
+          allItems = [];
+        }
+        return allItems;
+      })();
+
       try {
-        const j = await fetchJson("/api/dashboard/item_master");
-        allItems = (j.items || []).filter(Boolean);
-        allItems.sort((a, b) => a.localeCompare(b, "th"));
-      } catch (e) {
-        console.error("โหลด master items ล้มเหลว:", e);
-        allItems = [];
+        return await masterLoadingPromise;
+      } finally {
+        masterLoadingPromise = null;
       }
     }
 
-    async function loadDrugTable(month = currentMonth, year = currentYear) {
-      if (!allItems.length) await loadMasterItems();
+    async function fetchDrugSummary(year, month) {
+      const key = `${year}-${month}`;
+      const cached = getDrugTableCache(key);
+      if (cached) return cached;
 
-      const tbody = document.getElementById("drugTable");
-      tbody.innerHTML = "";
+      if (drugAbortCtrl) drugAbortCtrl.abort();
+      drugAbortCtrl = new AbortController();
 
-      let data = {};
-      try {
-        data = await fetchJson(`/api/dashboard/drug_summary?year=${year}&month=${month}`);
-      } catch (e) {
-        console.error("โหลดตารางยาไม่ได้:", e);
-        data = {};
-      }
-
-      const dataNorm = {};
-      Object.keys(data || {}).forEach(k => {
-        dataNorm[norm(k)] = data[k];
+      const data = await fetchJson(`/api/dashboard/drug_summary?year=${year}&month=${month}`, {
+        signal: drugAbortCtrl.signal
       });
 
-      allItems.forEach(name => {
+      setDrugTableCache(key, data || {});
+      return data || {};
+    }
+
+    function renderDrugTable(dataObj) {
+      const tbody = document.getElementById("drugTable");
+      if (!tbody) return;
+
+      const dataNorm = {};
+      Object.keys(dataObj || {}).forEach(k => {
+        dataNorm[norm(k)] = dataObj[k];
+      });
+
+      const html = allItems.map(name => {
         const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
         const usedText = item.has_used ? item.used : "-";
         const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${name}</td>
-          <td style="text-align:center;">${usedText}</td>
-          <td style="text-align:center;">${remainText}</td>
+        return `
+          <tr>
+            <td>${escapeHtml(name)}</td>
+            <td style="text-align:center;">${escapeHtml(usedText)}</td>
+            <td style="text-align:center;">${escapeHtml(remainText)}</td>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
+      }).join("");
+
+      tbody.innerHTML = html || `<tr><td colspan="3" style="text-align:center;">ไม่มีข้อมูล</td></tr>`;
     }
+
+    async function loadDrugTable(month = currentMonth, year = currentYear) {
+      const reqId = ++drugReqToken;
+      const tbody = document.getElementById("drugTable");
+      if (!tbody) return;
+
+      // optional loading (ไม่กระพริบแรง)
+      if (!allItems.length) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#666;">กำลังโหลดข้อมูล...</td></tr>`;
+      }
+
+      try {
+        // ✅ โหลดขนาน: master + summary พร้อมกัน
+        const [_, summary] = await Promise.all([
+          ensureMasterItems(),
+          fetchDrugSummary(year, month)
+        ]);
+
+        if (reqId !== drugReqToken) return; // กัน response เก่า
+        renderDrugTable(summary);
+      } catch (e) {
+        if (e.name === "AbortError") return;
+        console.error("โหลดตารางยาไม่ได้:", e);
+        if (reqId === drugReqToken) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#b00020;">โหลดข้อมูลไม่สำเร็จ</td></tr>`;
+        }
+      }
+    }
+
 
     // ================= COST =================
     async function loadCostYear(year) {
@@ -1023,9 +1100,9 @@
     // ================= INIT =================
     document.addEventListener("DOMContentLoaded", async function () {
       setupScroll("top5");
-      await loadMasterItems();
       await loadDrugTable(currentMonth, currentYear);
     });
+
   </script>
 
   <div class="footer">© 2026 Safety Officer, CPF Khon Kaen Feedmill</div>
