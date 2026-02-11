@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from urllib.parse import unquote, quote
 from threading import Lock
-
+from collections import defaultdict
 
 # ---------------- APP ----------------
 app = Flask(__name__)
@@ -402,6 +402,37 @@ def _to_float(v, default=0.0):
     except:
         return default
 
+def gas_batch_get(table, ids):
+    try:
+        payload = {
+            "action": "batch_get",
+            "table": table,
+            "payload": {"ids": [str(x) for x in ids]}
+        }
+        r = requests.post(GAS_URL, json=payload, timeout=30)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print("gas_batch_get error:", e)
+        return {"ok": False, "message": str(e), "data": []}
+
+
+def gas_batch_update_fields(table, updates):
+    """
+    updates = [{"id": "...", "field": "qty_remain", "value": 123}, ...]
+    """
+    try:
+        payload = {
+            "action": "batch_update_fields",
+            "table": table,
+            "payload": {"updates": updates}
+        }
+        r = requests.post(GAS_URL, json=payload, timeout=30)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print("gas_batch_update_fields error:", e)
+        return {"ok": False, "message": str(e)}
 
 # ===== Decimal / Money Helpers =====
 def _normalize_num_str(v):
@@ -1266,55 +1297,143 @@ def api_treatment_view(id):
 def api_treatment_edit(id):
     data = request.json or {}
 
-    # ดึงข้อมูลเดิม (ใช้ทั้งคืน stock เดิม + fallback visit_date)
-    old_res = gas_get("treatment", id)
-    old_meds = []
-    old_row = old_res.get("data") if old_res.get("ok") else None
-    if old_row:
+    def to_int(v, default=0):
         try:
-            old_meds = json.loads(old_row.get("medicine", "[]"))
+            return int(float(v))
         except:
-            old_meds = []
+            return default
 
-    # คืน stock Lot เดิม
-    for m in old_meds:
-        lot_id = m.get("lot_id")
-        if not lot_id:
+    def parse_meds(raw):
+        try:
+            arr = json.loads(raw or "[]")
+            return arr if isinstance(arr, list) else []
+        except:
+            return []
+
+    def lot_table_from_item_type(item_type):
+        t = str(item_type or "").strip().lower()
+        return "other_lot" if t in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+
+    def aggregate_meds(meds):
+        """
+        return: {(table, lot_id): qty_sum}
+        """
+        agg = defaultdict(int)
+        for m in meds:
+            lot_id = str(m.get("lot_id") or "").strip()
+            qty = to_int(m.get("qty"), 0)
+            if not lot_id or qty <= 0:
+                continue
+            table = lot_table_from_item_type(m.get("type") or m.get("item_type"))
+            agg[(table, lot_id)] += qty
+        return agg
+
+    # 1) ดึงข้อมูลเดิม
+    old_res = gas_get("treatment", id)
+    old_row = old_res.get("data") if old_res.get("ok") else None
+    old_meds = parse_meds(old_row.get("medicine", "[]") if old_row else "[]")
+
+    # 2) อ่านรายการใหม่
+    new_meds = parse_meds(data.get("medicine", "[]"))
+
+    # 3) คิด delta stock ต่อ lot: +old -new
+    old_agg = aggregate_meds(old_meds)
+    new_agg = aggregate_meds(new_meds)
+
+    delta_map = defaultdict(int)
+    for k, q in old_agg.items():
+        delta_map[k] += q
+    for k, q in new_agg.items():
+        delta_map[k] -= q
+
+    # ตัดตัวที่ net = 0 ออก
+    delta_map = {k: v for k, v in delta_map.items() if v != 0}
+
+    # 4) เตรียม batch get (ลดจำนวน request)
+    need_ids_med = [lot_id for (table, lot_id), _ in delta_map.items() if table == "medicine_lot"]
+    need_ids_other = [lot_id for (table, lot_id), _ in delta_map.items() if table == "other_lot"]
+
+    med_map = {}
+    other_map = {}
+
+    if need_ids_med:
+        res = gas_batch_get("medicine_lot", need_ids_med)
+        if res.get("ok"):
+            med_map = {str(x.get("id")): x for x in (res.get("data") or [])}
+
+    if need_ids_other:
+        res = gas_batch_get("other_lot", need_ids_other)
+        if res.get("ok"):
+            other_map = {str(x.get("id")): x for x in (res.get("data") or [])}
+
+    # 5) ตรวจคงเหลือ + สร้าง batch update
+    updates_by_table = {"medicine_lot": [], "other_lot": []}
+
+    for (expected_table, lot_id), delta in delta_map.items():
+        lot_id_s = str(lot_id)
+        lot_row = None
+        actual_table = expected_table
+
+        if expected_table == "medicine_lot":
+            lot_row = med_map.get(lot_id_s)
+            if not lot_row:
+                # fallback เผื่อข้อมูล type เก่าคลาดเคลื่อน
+                lot_row = other_map.get(lot_id_s)
+                if lot_row:
+                    actual_table = "other_lot"
+        else:
+            lot_row = other_map.get(lot_id_s)
+            if not lot_row:
+                lot_row = med_map.get(lot_id_s)
+                if lot_row:
+                    actual_table = "medicine_lot"
+
+        # fallback สุดท้ายแบบทีละตัว
+        if not lot_row:
+            r1 = gas_get("medicine_lot", lot_id_s)
+            if r1.get("ok") and r1.get("data"):
+                lot_row = r1["data"]
+                actual_table = "medicine_lot"
+            else:
+                r2 = gas_get("other_lot", lot_id_s)
+                if r2.get("ok") and r2.get("data"):
+                    lot_row = r2["data"]
+                    actual_table = "other_lot"
+
+        if not lot_row:
+            return {"success": False, "message": f"ไม่พบ Lot: {lot_id_s}"}
+
+        current = to_int(lot_row.get("qty_remain", 0), 0)
+        new_remain = current + delta  # delta = +คืน old -ตัด new
+
+        if new_remain < 0:
+            item_name = lot_row.get("item_name") or lot_row.get("lot_name") or lot_id_s
+            return {
+                "success": False,
+                "message": f"จำนวนคงเหลือไม่พอ ({item_name})"
+            }
+
+        updates_by_table[actual_table].append({
+            "id": lot_id_s,
+            "field": "qty_remain",
+            "value": new_remain
+        })
+
+    # 6) เขียน stock แบบ batch (ถ้าไม่ได้ค่อย fallback ทีละรายการ)
+    for table in ("medicine_lot", "other_lot"):
+        updates = updates_by_table[table]
+        if not updates:
             continue
 
-        item_type = str(m.get("type") or m.get("item_type") or "").strip().lower()
-        lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
+        br = gas_batch_update_fields(table, updates)
+        if not br.get("ok"):
+            # fallback
+            for u in updates:
+                rr = gas_update_field(table, u["id"], u["field"], u["value"])
+                if not rr.get("ok"):
+                    return {"success": False, "message": rr.get("message") or "อัปเดต stock ไม่สำเร็จ"}
 
-        lot_res = gas_get(lot_table, lot_id)
-        if lot_res.get("ok") and lot_res.get("data"):
-            current = int(lot_res["data"].get("qty_remain", 0))
-            new_remain = current + int(m.get("qty", 0) or 0)
-            gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
-
-    # ตัด stock ตามรายการใหม่
-    try:
-        new_meds = json.loads(data.get("medicine", "[]"))
-    except:
-        new_meds = []
-
-    for m in new_meds:
-        lot_id = m.get("lot_id")
-        qty = int(m.get("qty", 0) or 0)
-        if not lot_id or qty <= 0:
-            continue
-
-        item_type = str(m.get("type") or m.get("item_type") or "").strip().lower()
-        lot_table = "other_lot" if item_type in ("other", "other_item", "อื่นๆ") else "medicine_lot"
-
-        lot_res = gas_get(lot_table, lot_id)
-        if lot_res.get("ok") and lot_res.get("data"):
-            current = int(lot_res["data"].get("qty_remain", 0))
-            if current < qty:
-                return {"success": False, "message": "จำนวนคงเหลือไม่พอ"}
-            new_remain = current - qty
-            gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
-
-    # ===== PATCH: normalize visit_date ตอนแก้ไข =====
+    # 7) normalize visit_date
     incoming_visit = (data.get("visit_date") or "").strip() if isinstance(data.get("visit_date"), str) else data.get("visit_date")
     if incoming_visit:
         data["visit_date"] = normalize_visit_date_for_store(incoming_visit)
@@ -1324,8 +1443,13 @@ def api_treatment_edit(id):
         else:
             data["visit_date"] = normalize_visit_date_for_store("")
 
-    gas_update("treatment", id, data)
+    # 8) update treatment
+    ur = gas_update("treatment", id, data)
+    if not ur.get("ok"):
+        return {"success": False, "message": ur.get("message") or "อัปเดตข้อมูลไม่สำเร็จ"}
+
     return {"success": True}
+
 
 
 @app.route("/api/treatment/delete/<int:id>", methods=["DELETE"])
