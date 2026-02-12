@@ -1202,19 +1202,28 @@ def treatment_register():
 def treatment_form():
     if request.method == "POST":
         try:
-            medicine_json = request.form.get("medicine_json") or "[]"
+            # ✅ รองรับกรณีไม่เบิกยา/เวชภัณฑ์
+            medicine_json_raw = (request.form.get("medicine_json") or "").strip()
+            if not medicine_json_raw:
+                medicine_json_raw = "[]"
 
             try:
-                items = json.loads(medicine_json)
-            except:
+                items = json.loads(medicine_json_raw)
+            except Exception:
                 items = []
 
-            if not isinstance(items, list) or len(items) == 0:
-                return "กรุณาเพิ่มยาอย่างน้อย 1 รายการ", 400
+            if not isinstance(items, list):
+                items = []
+
+            # กันข้อมูลเพี้ยน
+            items = [it for it in items if isinstance(it, dict)]
+
+            # เก็บแบบมาตรฐานเสมอ
+            medicine_json = json.dumps(items, ensure_ascii=False)
 
             form_group = (request.form.get("symptom_group") or request.form.get("group") or "").strip()
 
-            # ตรวจ stock และตัด stock
+            # ตรวจ stock และตัด stock (จะทำเฉพาะเมื่อมีรายการยา)
             for it in items:
                 lot_id = it.get("lot_id")
                 qty = int(it.get("qty") or 0)
@@ -1242,7 +1251,7 @@ def treatment_form():
                 new_remain = current_remain - qty
                 gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
 
-            # ===== PATCH: normalize visit_date เป็นเวลาไทยปัจจุบัน/ค่าที่กรอก =====
+            # normalize visit_date
             visit_date_input = (request.form.get("visit_date") or request.form.get("date") or "").strip()
             visit_date = normalize_visit_date_for_store(visit_date_input)
 
@@ -1256,7 +1265,7 @@ def treatment_form():
                 "department": department,
                 "symptom_group": symptom_group,
                 "symptom_detail": symptom_detail,
-                "medicine": medicine_json,
+                "medicine": medicine_json,  # [] ได้
                 "allergy": request.form.get("allergy", "0"),
                 "allergy_detail": request.form.get("allergy_detail", "").strip(),
                 "occupational_disease": request.form.get("occupational_disease", "0"),
@@ -1304,11 +1313,15 @@ def api_treatment_edit(id):
             return default
 
     def parse_meds(raw):
-        try:
-            arr = json.loads(raw or "[]")
-            return arr if isinstance(arr, list) else []
-        except:
-            return []
+        if isinstance(raw, list):
+            return [x for x in raw if isinstance(x, dict)]
+        if isinstance(raw, str):
+            try:
+                arr = json.loads(raw or "[]")
+                return arr if isinstance(arr, list) else []
+            except:
+                return []
+        return []
 
     def lot_table_from_item_type(item_type):
         t = str(item_type or "").strip().lower()
