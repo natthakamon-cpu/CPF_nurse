@@ -412,7 +412,7 @@
 
       <button type="submit">💾 บันทึกทะเบียนการรักษา</button>
 
-      <input type="hidden" name="medicine_json" id="medicine_json">
+      <input type="hidden" name="medicine_json" id="medicine_json" value="[]">
 
     </form>
   </div>
@@ -427,10 +427,14 @@
     document.addEventListener("DOMContentLoaded", () => {
       const v = document.getElementById("visit_date");
       if (v && !v.value) v.value = nowDateTimeLocalValue();
+
+      // ให้มีค่าเริ่มต้นเสมอ เผื่อไม่มีการเบิกจ่าย
+      const mj = document.getElementById("medicine_json");
+      if (mj && !mj.value) mj.value = "[]";
     });
 
     /* ===============================
-       ELEMENTS
+      ELEMENTS
     ================================ */
     const symptom = document.getElementById('symptom_group');
     const medSelect = document.getElementById('medicine_select');
@@ -665,14 +669,9 @@
       if (tr) tr.remove();
     }
 
-    form.addEventListener("submit", e => {
-      if (medicines.length === 0) {
-        e.preventDefault();
-        alert("กรุณาเพิ่มยาอย่างน้อย 1 รายการ");
-        return;
-      }
-
-      medicines = medicines.map(m => ({
+    // ✅ อนุญาตบันทึกได้ แม้ไม่มีการเบิกจ่ายยา/เวชภัณฑ์
+    form.addEventListener("submit", () => {
+      medicines = (medicines || []).map(m => ({
         ...m,
         type: (m.type || "").trim() || getItemType()
       }));
