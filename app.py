@@ -270,6 +270,84 @@ def norm_key(s: str) -> str:
     s = re.sub(r"\s+", "", s)
     return s
 
+# ===== SHARED MEDICINE (ใช้ Lot ร่วมข้ามหลายกลุ่มอาการ) =====
+# key = ชื่อยาแบบ normalize (ตัวอักษร/ตัวเลขเท่านั้น)
+_SHARED_MED_RULES = {
+    "paracetamol500": {
+        "canonical": "Paracetamol(500)",
+        "group_codes": {"respiratory", "digestive", "brain"},
+    }
+}
+
+def _norm_med_key(s: str) -> str:
+    s = str(s or "").strip().lower()
+    s = s.replace("（", "(").replace("）", ")")
+    for ch in ("–", "—", "−"):
+        s = s.replace(ch, "-")
+    s = re.sub(r"\s+", "", s)
+    # ตัดอักขระพิเศษออก เหลือไทย/อังกฤษ/ตัวเลข
+    s = re.sub(r"[^a-z0-9ก-๙]+", "", s)
+    return s
+
+def _shared_rule_by_name(name: str):
+    return _SHARED_MED_RULES.get(_norm_med_key(name))
+
+def is_shared_medicine_name(name: str) -> bool:
+    return _shared_rule_by_name(name) is not None
+
+def canonical_medicine_name(name: str) -> str:
+    rule = _shared_rule_by_name(name)
+    if rule:
+        return rule["canonical"]
+    return norm_text(name)
+
+def _find_medicine_ids_by_exact_name(name: str):
+    target = _norm_med_key(name)
+    ids = []
+    rows = _unwrap_rows(gas_list("medicine", 5000))
+    for m in rows:
+        if str(m.get("type", "")).strip().lower() != "medicine":
+            continue
+        if _norm_med_key(m.get("name", "")) == target:
+            mid = str(m.get("id", "")).strip()
+            if mid:
+                ids.append(mid)
+    return ids
+
+def _pick_canonical_med_id(name: str, fallback_med_id=None):
+    ids = _find_medicine_ids_by_exact_name(name)
+    fb = str(fallback_med_id or "").strip()
+    if fb and fb not in ids:
+        ids.append(fb)
+    if not ids:
+        return fb
+
+    def _sort_key(x):
+        return (0, int(x)) if str(x).isdigit() else (1, str(x))
+
+    return sorted(set(ids), key=_sort_key)[0]
+
+def _get_shared_medicine_lots_by_name(name: str):
+    """
+    ดึง lot ของยาร่วมจากทุก medicine_id ที่ชื่อเดียวกัน
+    และ/หรือ item_name ที่ตรง canonical
+    """
+    canon = canonical_medicine_name(name)
+    target_key = _norm_med_key(canon)
+    target_ids = set(_find_medicine_ids_by_exact_name(canon))
+
+    rows = _unwrap_rows(gas_list("medicine_lot", 10000))
+    out = []
+    for r in rows:
+        rid = str(r.get("id", "")).strip()
+        if not rid:
+            continue
+        r_mid = str(r.get("medicine_id", "")).strip()
+        r_name_key = _norm_med_key(r.get("item_name", ""))
+        if (r_name_key and r_name_key == target_key) or (r_mid and r_mid in target_ids):
+            out.append(r)
+    return out
+
 
 def gas_get(table, row_id):
     """ดึงข้อมูลตาม ID"""
@@ -987,13 +1065,19 @@ def medicine_detail(med_id):
         return "ไม่พบข้อมูล", 404
 
     med = med_res["data"]
+    med_name = norm_text(med.get("name", ""))
 
-    all_lots = gas_list("medicine_lot", 5000)
-    lots = []
-    if all_lots.get("ok"):
-        for l in all_lots.get("data", []):
-            if str(l.get("medicine_id", "")) == str(med_id):
-                lots.append(l)
+    # ✅ ถ้าเป็นยาร่วม ให้โชว์ lot รวมทุกระบบ
+    if is_shared_medicine_name(med_name):
+        lots = _get_shared_medicine_lots_by_name(med_name)
+    else:
+        all_lots = gas_list("medicine_lot", 5000)
+        lots = []
+        if all_lots.get("ok"):
+            for l in all_lots.get("data", []):
+                if str(l.get("medicine_id", "")) == str(med_id):
+                    lots.append(l)
+
     lots.sort(key=lambda x: (str(x.get("expire_date", "")).strip() == "", str(x.get("expire_date", ""))))
 
     mtype = str(med.get("type", "")).strip().lower()
@@ -1006,31 +1090,42 @@ def medicine_detail(med_id):
     return render_template("medicine_lot.html", med=med, lots=lots, back_url=back_url)
 
 
+
 @app.route("/medicine/<int:med_id>/add_lot", methods=["POST"])
 @catalog_required
 def add_lot(med_id):
     src = request.get_json(silent=True) or request.form
 
-    expire_date = (src.get("expire_date") or "").strip()   # ✅ ไม่บังคับ
+    expire_date = (src.get("expire_date") or "").strip()   # ว่างได้
     qty = _to_int(src.get("qty"), 0)
     price = _to_float(src.get("price"), 0.0)
     item_name = norm_text(src.get("item_name", ""))
 
-    # ✅ ไม่เช็ค expire_date แล้ว (เช็คเฉพาะ qty / price)
     if qty <= 0 or price <= 0:
         if _wants_json_response():
             return jsonify({"success": False, "message": "จำนวนหรือราคาไม่ถูกต้อง"}), 400
         return "จำนวนหรือราคาไม่ถูกต้อง", 400
 
-    if not item_name:
-        med_res = gas_get("medicine", med_id)
-        if med_res.get("ok") and med_res.get("data"):
-            item_name = norm_text(med_res["data"].get("name", ""))
+    med_res = gas_get("medicine", med_id)
+    med_name_from_id = ""
+    if med_res.get("ok") and med_res.get("data"):
+        med_name_from_id = norm_text(med_res["data"].get("name", ""))
 
-    rows = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(med_id))
+    if not item_name:
+        item_name = med_name_from_id
+
+    item_name = canonical_medicine_name(item_name)
+    shared_mode = is_shared_medicine_name(item_name)
+
+    if shared_mode:
+        # ✅ บันทึก lot เข้าศูนย์กลาง (canonical medicine_id)
+        target_med_id = _pick_canonical_med_id(item_name, fallback_med_id=med_id)
+        rows = _get_shared_medicine_lots_by_name(item_name)
+    else:
+        target_med_id = str(med_id)
+        rows = _get_lots_by_field_fast("medicine_lot", "medicine_id", str(med_id))
 
     existing = None
-    # ✅ รวม Lot เดิมเฉพาะกรณีที่ผู้ใช้กรอกวันหมดอายุเท่านั้น
     if expire_date:
         for lot in rows:
             if str(lot.get("expire_date", "")).strip() == expire_date:
@@ -1043,13 +1138,17 @@ def add_lot(med_id):
         new_price_per_lot = _to_float(existing.get("price_per_lot"), 0.0) + price
         new_price_per_unit = (new_price_per_lot / new_qty_total) if new_qty_total > 0 else 0
 
-        upd = gas_update("medicine_lot", existing["id"], {
+        upd_payload = {
             "qty_total": new_qty_total,
             "qty_remain": new_qty_remain,
             "price_per_lot": new_price_per_lot,
             "price_per_unit": round(new_price_per_unit, 4),
             "item_name": item_name
-        })
+        }
+        if shared_mode and target_med_id:
+            upd_payload["medicine_id"] = target_med_id
+
+        upd = gas_update("medicine_lot", existing["id"], upd_payload)
         if not upd.get("ok"):
             if _wants_json_response():
                 return jsonify({"success": False, "message": upd.get("message", "update failed")}), 500
@@ -1070,10 +1169,10 @@ def add_lot(med_id):
         price_per_unit = price / qty if qty > 0 else 0
 
         ap = gas_append("medicine_lot", {
-            "medicine_id": med_id,
+            "medicine_id": target_med_id or med_id,
             "item_name": item_name,
             "lot_name": lot_name,
-            "expire_date": expire_date,   # ✅ ว่างได้
+            "expire_date": expire_date,   # ว่างได้
             "qty_total": qty,
             "qty_remain": qty,
             "price_per_lot": price,
@@ -1100,6 +1199,7 @@ def add_lot(med_id):
         return jsonify({"success": True, "lot": lot_obj})
 
     return redirect(f"/medicine/{med_id}")
+
 
 
 
@@ -1225,6 +1325,13 @@ def treatment_form():
 
             # ตรวจ stock และตัด stock (จะทำเฉพาะเมื่อมีรายการยา)
             for it in items:
+                # ✅ canonical name เพื่อให้ dashboard รวมเป็นรายการเดียว
+                raw_name = it.get("name") or it.get("item_name") or ""
+                canon_name = canonical_medicine_name(raw_name)
+                if canon_name:
+                    it["name"] = canon_name
+                    it["item_name"] = canon_name
+
                 lot_id = it.get("lot_id")
                 qty = int(it.get("qty") or 0)
 
@@ -1250,6 +1357,10 @@ def treatment_form():
 
                 new_remain = current_remain - qty
                 gas_update_field(lot_table, lot_id, "qty_remain", new_remain)
+
+            # ✅ เก็บ medicine json หลัง normalize แล้ว
+            medicine_json = json.dumps(items, ensure_ascii=False)
+
 
             # normalize visit_date
             visit_date_input = (request.form.get("visit_date") or request.form.get("date") or "").strip()
@@ -1607,7 +1718,7 @@ def api_medicine_id():
 @app.get("/api/medicine_items")
 def api_medicine_items():
     group = (request.args.get("group") or "").strip()
-    code = (request.args.get("code") or "").strip()
+    code = (request.args.get("code") or "").strip().lower()
 
     if not group and not code:
         return jsonify({"items": []})
@@ -1617,6 +1728,16 @@ def api_medicine_items():
     names = []
     seen = set()
 
+    def _push_name(n):
+        n = canonical_medicine_name(n)
+        if not n:
+            return
+        k = n.lower()
+        if k in seen:
+            return
+        seen.add(k)
+        names.append(n)
+
     for r in rows:
         g = (r.get("group_name") or "").strip()
         name = (r.get("name") or "").strip()
@@ -1624,14 +1745,16 @@ def api_medicine_items():
             continue
 
         if (group and g == group) or (code and g == code):
-            key = name.lower()
-            if key not in seen:
-                seen.add(key)
-                names.append(name)
+            _push_name(name)
+
+    # บังคับให้ shared medicine โชว์ในกลุ่มที่กำหนด แม้ข้อมูลบางกลุ่มขาด
+    for rule in _SHARED_MED_RULES.values():
+        if code in set(rule.get("group_codes", set())):
+            _push_name(rule.get("canonical", ""))
 
     names.sort(key=lambda s: s.lower())
-
     return jsonify({"items": names})
+
 
 
 @app.route("/api/medicine_lots")
@@ -1639,6 +1762,29 @@ def api_medicine_lots():
     medicine_id = (request.args.get("medicine_id") or "").strip()
     name = (request.args.get("name") or "").strip()
 
+    # ✅ shared medicine: รวม lot จากทุกระบบที่ใช้ชื่อเดียวกัน
+    if name and is_shared_medicine_name(name):
+        rows = _get_shared_medicine_lots_by_name(name)
+        lots = []
+        seen = set()
+        for r in rows:
+            if _to_int(r.get("qty_remain", 0), 0) <= 0:
+                continue
+            lid = str(r.get("id", "")).strip()
+            if not lid or lid in seen:
+                continue
+            seen.add(lid)
+            lots.append({
+                "id": r.get("id"),
+                "name": r.get("lot_name"),
+                "remain": r.get("qty_remain"),
+                "price": r.get("price_per_unit")
+            })
+
+        lots.sort(key=lambda x: (str(x.get("name", "")), str(x.get("id", ""))))
+        return jsonify({"lots": lots})
+
+    # default เดิม
     if not medicine_id and name:
         med_res = gas_list("medicine", 5000)
         if med_res.get("ok"):
@@ -1666,6 +1812,7 @@ def api_medicine_lots():
 
     lots.sort(key=lambda x: str(x.get("name", "")))
     return jsonify({"lots": lots})
+
 
 
 @app.route("/api/cut_stock", methods=["POST"])
@@ -1816,7 +1963,7 @@ def _build_drug_master_and_remain():
     med_id_to_key = {}    # medicine_id -> norm_name
 
     def add_name(raw_name):
-        display = norm_text(raw_name)
+        display = canonical_medicine_name(raw_name)  # ✅ รวมชื่อ shared
         if not display:
             return ""
         k = _dash_norm_name(display)
@@ -1899,7 +2046,7 @@ def _build_drug_used_month_index():
 
         for it in items:
             qty = _to_int(it.get("qty"), 0)
-            raw_name = norm_text(it.get("name") or it.get("item_name") or "")
+            raw_name = canonical_medicine_name(it.get("name") or it.get("item_name") or "")
             if not raw_name or qty <= 0:
                 continue
 
@@ -2120,7 +2267,7 @@ def api_dashboard_top5_month():
 
                 if isinstance(items, list):
                     for item in items:
-                        name = str(item.get("name") or item.get("item_name") or "").strip()
+                        name = canonical_medicine_name(str(item.get("name") or item.get("item_name") or "").strip())
                         qty = int(item.get("qty", 0) or 0)
                         if name and qty > 0:
                             counter[name] = counter.get(name, 0) + qty
@@ -2156,7 +2303,7 @@ def api_dashboard_top5_year():
 
                 if isinstance(items, list):
                     for item in items:
-                        name = str(item.get("name") or item.get("item_name") or "").strip()
+                        name = canonical_medicine_name(str(item.get("name") or item.get("item_name") or "").strip())
                         qty = int(item.get("qty", 0) or 0)
                         if name and qty > 0:
                             counter[name] = counter.get(name, 0) + qty
@@ -2323,7 +2470,7 @@ def api_dashboard_month_bundle():
         has_supply_flag = False
         for it in items:
             qty = _to_int(it.get("qty"), 0)
-            name = str(it.get("name") or it.get("item_name") or "").strip()
+            name = canonical_medicine_name(str(it.get("name") or it.get("item_name") or "").strip())
 
             if name and qty > 0:
                 top_counter[name] = top_counter.get(name, 0) + qty
@@ -2387,7 +2534,7 @@ def api_dashboard_year_bundle():
         if isinstance(items, list):
             for it in items:
                 qty = _to_int(it.get("qty"), 0)
-                name = str(it.get("name") or it.get("item_name") or "").strip()
+                name = canonical_medicine_name(str(it.get("name") or it.get("item_name") or "").strip())
                 if name and qty > 0:
                     top_counter[name] = top_counter.get(name, 0) + qty
 
