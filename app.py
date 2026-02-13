@@ -3,6 +3,7 @@ import requests
 import json
 import time
 import re
+import ast
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
@@ -1989,17 +1990,81 @@ def waste_delete(id):
 # ============================================
 # DASHBOARD
 # ============================================
+def _parse_treatment_items(raw):
+    """
+    รองรับหลายรูปแบบของคอลัมน์ treatment.medicine:
+    - list/dict
+    - JSON string
+    - python-literal string (single quote) จากข้อมูลเก่า
+    คืนค่าเป็น list[dict] ที่ normalize แล้ว (มี name, qty)
+    """
+    items = []
+
+    if isinstance(raw, list):
+        items = raw
+    elif isinstance(raw, dict):
+        items = [raw]
+    else:
+        s = str(raw or "").strip()
+        if not s or s.lower() in ("null", "none"):
+            return []
+        # พยายาม json ก่อน
+        try:
+            obj = json.loads(s)
+        except Exception:
+            # fallback ข้อมูลเก่าที่เป็น single quote
+            try:
+                obj = ast.literal_eval(s)
+            except Exception:
+                obj = []
+        if isinstance(obj, dict):
+            items = [obj]
+        elif isinstance(obj, list):
+            items = obj
+        else:
+            items = []
+
+    out = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+
+        name = canonical_medicine_name(
+            it.get("name")
+            or it.get("item_name")
+            or it.get("medicine_name")
+            or it.get("item")
+            or ""
+        )
+        qty = _to_int(it.get("qty", it.get("quantity", it.get("used_qty", 0))), 0)
+
+        if not name:
+            continue
+
+        row = dict(it)
+        row["name"] = name
+        row["qty"] = qty
+        out.append(row)
+
+    return out
+
+
+def _treatment_year_month(row):
+    """
+    รองรับข้อมูลเก่าที่บางแถวใช้ key 'date' แทน 'visit_date'
+    """
+    return _visit_year_month(
+        row.get("visit_date") or row.get("date") or row.get("created_at")
+    )
 
 def has_supply(medicine_json_text):
-    try:
-        items = json.loads(medicine_json_text or "[]")
-        for it in items:
-            t = (it.get("type") or it.get("item_type") or "").strip().lower()
-            if t in ("เวชภัณฑ์", "supply", "supplies"):
-                return True
-        return False
-    except:
-        return False
+    items = _parse_treatment_items(medicine_json_text)
+    for it in items:
+        t = (it.get("type") or it.get("item_type") or "").strip().lower()
+        if t in ("เวชภัณฑ์", "supply", "supplies"):
+            return True
+    return False
+
 
 def _dash_norm_name(s):
     s = str(s or "").strip().lower()
@@ -2082,10 +2147,10 @@ def _build_drug_master_and_remain():
 
 def _build_drug_used_month_index():
     """
-    สร้างดัชนี used แยกตามเดือนครั้งเดียว:
     used_index["YYYY-MM"][norm_name] = used_qty
+    นับจาก treatment.medicine โดย parser แบบทนข้อมูลเก่า/เพี้ยน
     """
-    cache_key = ("drug_used_month_index_v2",)
+    cache_key = ("drug_used_month_index_v3",)  # เปลี่ยน version เพื่อกัน cache เก่า
     cached = _dash_get(cache_key, ttl=120)
     if cached is not None:
         return cached
@@ -2095,21 +2160,14 @@ def _build_drug_used_month_index():
     display_by_key = {}
 
     for t in treatments:
-        y, m = _visit_year_month(t.get("visit_date"))
+        y, m = _treatment_year_month(t)
         if not y or not m:
             continue
 
         ym = f"{y:04d}-{m:02d}"
         bucket = used_index.setdefault(ym, {})
 
-        try:
-            items = json.loads(t.get("medicine", "[]"))
-        except Exception:
-            items = []
-
-        if not isinstance(items, list):
-            continue
-
+        items = _parse_treatment_items(t.get("medicine", "[]"))
         for it in items:
             qty = _to_int(it.get("qty"), 0)
             raw_name = canonical_medicine_name(it.get("name") or it.get("item_name") or "")
@@ -2131,6 +2189,7 @@ def _build_drug_used_month_index():
     }
     _dash_set(cache_key, payload)
     return payload
+
 
 @app.get("/api/dashboard/item_master")
 @login_required
@@ -2154,7 +2213,7 @@ def dashboard_drug_summary():
     if not year or not month or month < 1 or month > 12:
         return jsonify({})
 
-    cache_key = ("drug_summary_v2", year, month)
+    cache_key = ("drug_summary_v3", year, month)
     cached = _dash_get(cache_key, ttl=90)
     if cached is not None:
         return jsonify(cached)
