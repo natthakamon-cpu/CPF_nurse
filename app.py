@@ -275,7 +275,21 @@ def norm_key(s: str) -> str:
 _SHARED_MED_RULES = {
     "paracetamol500": {
         "canonical": "Paracetamol(500)",
-        "group_codes": {"respiratory", "digestive", "brain"},
+        # alias สำหรับกันชื่อพิมพ์หลากหลาย
+        "aliases": {
+            "Paracetamol(500)", "Paracetamol 500", "Paracetamol500",
+            "paracetamol 500 mg", "para 500"
+        },
+        # กลุ่มภาษาไทยที่ต้องเห็นยาเดียวกัน
+        "group_names": {
+            "กล้ามเนื้อ", "ผิวหนัง", "ระบบขับถ่าย", "ระบบสืบพันธุ์",
+            "ตา หู ช่องปาก", "ตาหูช่องปาก", "คอ", "จมูก"
+        },
+        # code เผื่อ frontend ส่งรหัสกลุ่ม
+        "group_codes": {
+            "muscle", "skin", "urinary", "reproductive",
+            "eyeearmouth", "eye_ear_mouth", "throat", "nose"
+        }
     }
 }
 
@@ -300,6 +314,24 @@ def canonical_medicine_name(name: str) -> str:
     if rule:
         return rule["canonical"]
     return norm_text(name)
+
+def _shared_rule_by_name(name: str):
+    k = _norm_med_key(name)
+    for rule in _SHARED_MED_RULES.values():
+        keys = {_norm_med_key(rule.get("canonical", ""))}
+        for a in rule.get("aliases", set()):
+            keys.add(_norm_med_key(a))
+        if k in keys:
+            return rule
+    return None
+
+
+def _rule_match_group(rule, group_name="", group_code=""):
+    gk = norm_key(group_name or "")
+    ck = norm_key(group_code or "")
+    name_set = {norm_key(x) for x in rule.get("group_names", set())}
+    code_set = {norm_key(x) for x in rule.get("group_codes", set())}
+    return (gk and gk in name_set) or (ck and ck in code_set)
 
 def _find_medicine_ids_by_exact_name(name: str):
     target = _norm_med_key(name)
@@ -825,6 +857,31 @@ def medicine_list(group):
             m_group = str(m.get("group_name", "")).strip()
             if m_type == "medicine" and m_group == group:
                 meds.append(m)
+
+    # เติม shared medicine ให้เห็นในกลุ่มเป้าหมาย แม้ไม่มี row ของกลุ่มนั้น
+    existing_names = {norm_key(m.get("name", "")) for m in meds}
+
+    for rule in _SHARED_MED_RULES.values():
+        if _rule_match_group(rule, group, ""):
+            canon = rule.get("canonical", "")
+            if norm_key(canon) in existing_names:
+                continue
+
+            canon_id = _pick_canonical_med_id(canon)
+            if not canon_id:
+                continue  # ยังไม่มี master row จริงในตาราง medicine
+
+            meds.append({
+                "id": canon_id,   # ให้กดเข้า lot กลางได้ทันที
+                "type": "medicine",
+                "group_name": group,
+                "name": canon,
+                "benefit": "",
+                "min_qty": 0,
+                "qty": 0,
+                "expire_date": "",
+                "used": 0
+            })
 
     return render_template("medicine_list.html", medicines=meds, meds=meds, group=group)
 
@@ -1706,6 +1763,10 @@ def api_medicine_id():
     name = (request.args.get("name") or "").strip()
     res = gas_list("medicine", 1000)
 
+    name = canonical_medicine_name(name)
+    if is_shared_medicine_name(name):
+        return jsonify({"medicine_id": _pick_canonical_med_id(name)})
+
     if res.get("ok"):
         target = norm_key(name)
         for m in res.get("data", []):
@@ -1749,7 +1810,7 @@ def api_medicine_items():
 
     # บังคับให้ shared medicine โชว์ในกลุ่มที่กำหนด แม้ข้อมูลบางกลุ่มขาด
     for rule in _SHARED_MED_RULES.values():
-        if code in set(rule.get("group_codes", set())):
+        if _rule_match_group(rule, group, code):
             _push_name(rule.get("canonical", ""))
 
     names.sort(key=lambda s: s.lower())
@@ -1761,6 +1822,11 @@ def api_medicine_items():
 def api_medicine_lots():
     medicine_id = (request.args.get("medicine_id") or "").strip()
     name = (request.args.get("name") or "").strip()
+    
+    if not name and medicine_id:
+        mr = gas_get("medicine", medicine_id)
+        if mr.get("ok") and mr.get("data"):
+            name = str(mr["data"].get("name", "")).strip()
 
     # ✅ shared medicine: รวม lot จากทุกระบบที่ใช้ชื่อเดียวกัน
     if name and is_shared_medicine_name(name):
