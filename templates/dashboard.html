@@ -986,7 +986,9 @@
 
       const html = allItems.map(name => {
         const item = dataNorm[norm(name)] || { used: 0, remain: 0, has_used: false, has_lot: false };
-        const usedText = item.has_used ? item.used : "-";
+        const usedVal = Number(item.used || 0);
+        const usedText = (item.has_used === true || usedVal > 0) ? usedVal : "-";
+
         const remainText = item.has_lot ? item.remain : "ยังไม่มีข้อมูล";
 
         return `
