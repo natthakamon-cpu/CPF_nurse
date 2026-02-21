@@ -2814,7 +2814,9 @@ def api_medical_certificate_delete(id):
         return jsonify({"success": True})
     return jsonify({"success": False, "message": res.get("message", "Failed to delete")})
 
-
+@app.route('/about')
+def about():
+    return render_template('about.html')
 # ============================================
 # RUN
 # ============================================
