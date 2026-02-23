@@ -2817,6 +2817,10 @@ def api_medical_certificate_delete(id):
 @app.route('/about')
 def about():
     return render_template('about.html')
+
+@app.route('/')
+def welcome():
+    return render_template('welcome.html')
 # ============================================
 # RUN
 # ============================================
